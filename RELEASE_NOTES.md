@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- Preserve legacy polygon profiles on their publication grid, including collapsed micro-chamfer
+  edges, without changing strict section validation or discarding source face evidence. Explicit
+  bounded refusals distinguish genuinely unrepresentable geometry from normalization.
+
+- Add full JSON geometry goldens for all seven unified recess proof paths and migration checks
+  across the authored goldens and vendored MFCAD++ development corpus. See
+  [the migration guide](docs/section-recess-migration.md) for the outstanding extent-only Pocket
+  cutover; superseded public fields have not yet been removed.
+
 - Generalise the unified `SectionRecess` geometry to closed and truthfully open line/arc profiles,
   pocket/edge-open/passage topology, and project accepted passages, prismatic pockets and exact
   edge-open recess families while retaining their body and face evidence.

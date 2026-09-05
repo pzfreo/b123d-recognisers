@@ -81,6 +81,21 @@ holes = recognise_holes(part, cyls=cylinders)
 patterns = recognise_hole_patterns(holes)
 ```
 
+### Consume recess geometry as JSON
+
+```python
+from b123d_recognisers import build_section_recess_document
+
+document = build_section_recess_document(part).to_dict()
+for occurrence in document["occurrences"]:
+    print(occurrence["classification"], occurrence["geometry"])
+```
+
+This uses caller coordinates and the accepted aggregate inventory. Pockets, passages and edge-open
+recesses share a free frame, line/arc profile and explicit end conditions. Face indices refer only
+to this document's input-face roster, not persistent CAD identities. See the
+[consumer migration guide](docs/section-recess-migration.md) for scope and counting rules.
+
 ### Inspect geometry for declared features
 
 CAD front ends that create a declared feature from a selected face can use the supported,

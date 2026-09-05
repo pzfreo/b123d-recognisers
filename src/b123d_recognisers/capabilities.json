@@ -2687,7 +2687,8 @@
         "docs/capabilities.md#proven-recognition-capability"
       ],
       "golden_evidence": [
-        "tests/section_recess_expected.json"
+        "tests/section_recess_expected.json",
+        "tests/section_recess_geometry_expected.json"
       ],
       "id": "section-recesses",
       "introduced_in": "0.4.15",
@@ -2965,6 +2966,9 @@
       "test_evidence": [
         "tests/test_capability_claims.py",
         "tests/test_recogniser_contract.py",
+        "tests/test_section_adapter_rounding.py",
+        "tests/test_section_recess_geometry_golden.py",
+        "tests/test_section_recess_migration.py",
         "tests/test_section_recesses.py"
       ]
     },

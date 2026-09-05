@@ -50,9 +50,17 @@ FAMILIES = {
         ],
         "census": None,
         "goldens": [],
-        "golden_paths": ["tests/section_recess_expected.json"],
+        "golden_paths": [
+            "tests/section_recess_expected.json",
+            "tests/section_recess_geometry_expected.json",
+        ],
         "introduced": "0.4.15",
-        "tests": ["tests/test_section_recesses.py"],
+        "tests": [
+            "tests/test_section_recesses.py",
+            "tests/test_section_recess_geometry_golden.py",
+            "tests/test_section_recess_migration.py",
+            "tests/test_section_adapter_rounding.py",
+        ],
     },
     "paired-ramp-steps": {
         "recognisers": [("recognise_paired_ramp_steps", "part")],

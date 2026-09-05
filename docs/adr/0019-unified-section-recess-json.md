@@ -318,6 +318,13 @@ construct the final JSON geometry; it does not invoke recognition.
 The normal effectiveness runner now scores ``SectionRecess`` from the production inventory. There
 is no overlay path or second implementation.
 
+The provider cutover audit and consumer instructions are recorded in
+[`docs/section-recess-migration.md`](../section-recess-migration.md). Exact accepted regions are
+checked independently of benchmark scores. The audit identifies four authored extent-only Pocket
+summaries without a unified counterpart; their removal or replacement remains an explicit public
+contract decision, not a consequence of obtaining green CI. Existing census and physical-candidate
+scoring identities remain unchanged during this output-only migration.
+
 The developer may use MFCAD++ repeatedly. A person outside the implementation loop runs MFInstSeg
 once after the branch and test command are frozen and returns only the aggregate JSON. A favourable
 result permits production integration; an unfavourable result rejects or narrows the recognition

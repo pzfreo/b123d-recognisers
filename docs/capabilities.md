@@ -27,8 +27,8 @@ an assembly component has no name attribute.
 The loader does not alter recognition or face identity after loading. On inputs accepted by both
 paths, face count and ordered geometric face signatures must match build123d's importer; compounds
 retain their separate solids for body-local ownership. Read failure, no transferable roots, a null
-transfer, and an unsupported topological wrapper fail explicitly. This additive public operation
-requires a future minor release under ADR 0005; Epic #290 does not publish beyond v0.4.12.
+transfer, and an unsupported topological wrapper fail explicitly. This operation shipped in
+0.4.13; see the release notes for the owner-directed patch release sequence.
 
 ## Declared-feature inspection API
 

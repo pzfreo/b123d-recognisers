@@ -1,0 +1,672 @@
+{
+  "edge_open_circular": [
+    {
+      "classification": {
+        "feature_kind": "edge_open_recess",
+        "section_shape": "obround"
+      },
+      "constituent_face_count": 5,
+      "defining_face_count": 4,
+      "geometry": {
+        "ends": {
+          "high": {
+            "condition": "open",
+            "gradient": [
+              0.0,
+              0.0
+            ]
+          },
+          "low": {
+            "condition": "capped",
+            "gradient": [
+              0.0,
+              0.0
+            ]
+          }
+        },
+        "frame": {
+          "origin": [
+            18.0,
+            10.0,
+            0.0
+          ],
+          "run": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "u": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "v": [
+            0.0,
+            1.0,
+            0.0
+          ]
+        },
+        "profile": {
+          "boundary": [
+            {
+              "bulge": 0.0,
+              "point": [
+                7.0,
+                5.0
+              ]
+            },
+            {
+              "bulge": 1.000000023205,
+              "point": [
+                -12.0,
+                5.0
+              ]
+            },
+            {
+              "bulge": 0.0,
+              "point": [
+                -12.0,
+                -5.0
+              ]
+            },
+            {
+              "bulge": 0.236067972749,
+              "point": [
+                8.0,
+                -5.0
+              ]
+            },
+            {
+              "bulge": 0.0,
+              "point": [
+                12.0,
+                -3.0
+              ]
+            }
+          ],
+          "closure": "open",
+          "opening": [
+            [
+              12.0,
+              -3.0
+            ],
+            [
+              7.0,
+              5.0
+            ]
+          ]
+        },
+        "run_interval": [
+          4.0,
+          12.0
+        ],
+        "type": "section_recess"
+      }
+    }
+  ],
+  "edge_open_polygonal": [
+    {
+      "classification": {
+        "feature_kind": "edge_open_recess",
+        "section_shape": "polygonal"
+      },
+      "constituent_face_count": 7,
+      "defining_face_count": 6,
+      "geometry": {
+        "ends": {
+          "high": {
+            "condition": "open",
+            "gradient": [
+              0.0,
+              0.0
+            ]
+          },
+          "low": {
+            "condition": "capped",
+            "gradient": [
+              0.0,
+              0.0
+            ]
+          }
+        },
+        "frame": {
+          "origin": [
+            0.396,
+            13.1,
+            0.0
+          ],
+          "run": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "u": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "v": [
+            0.0,
+            1.0,
+            0.0
+          ]
+        },
+        "profile": {
+          "boundary": [
+            {
+              "bulge": 0.0,
+              "point": [
+                -4.4327,
+                6.8997
+              ]
+            },
+            {
+              "bulge": 0.0,
+              "point": [
+                -7.6039,
+                4.3708
+              ]
+            },
+            {
+              "bulge": 0.0,
+              "point": [
+                -7.6039,
+                -2.5714
+              ]
+            },
+            {
+              "bulge": 0.0,
+              "point": [
+                -2.1763,
+                -6.8997
+              ]
+            },
+            {
+              "bulge": 0.0,
+              "point": [
+                4.5918,
+                -5.355
+              ]
+            },
+            {
+              "bulge": 0.0,
+              "point": [
+                7.6039,
+                0.8997
+              ]
+            },
+            {
+              "bulge": 0.0,
+              "point": [
+                4.7145,
+                6.8997
+              ]
+            }
+          ],
+          "closure": "open",
+          "opening": [
+            [
+              4.7145,
+              6.8997
+            ],
+            [
+              -4.4327,
+              6.8997
+            ]
+          ]
+        },
+        "run_interval": [
+          10.0,
+          20.0
+        ],
+        "type": "section_recess"
+      }
+    }
+  ],
+  "obround_pocket": [
+    {
+      "classification": {
+        "feature_kind": "pocket",
+        "section_shape": "obround"
+      },
+      "constituent_face_count": 5,
+      "defining_face_count": 4,
+      "geometry": {
+        "ends": {
+          "high": {
+            "condition": "open",
+            "gradient": [
+              0.0,
+              0.0
+            ]
+          },
+          "low": {
+            "condition": "capped",
+            "gradient": [
+              0.0,
+              0.0
+            ]
+          }
+        },
+        "frame": {
+          "origin": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "run": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "u": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "v": [
+            0.0,
+            1.0,
+            0.0
+          ]
+        },
+        "profile": {
+          "boundary": [
+            {
+              "bulge": 1.0,
+              "point": [
+                -6.696,
+                -0.402
+              ]
+            },
+            {
+              "bulge": 0.0,
+              "point": [
+                -3.696,
+                -5.598
+              ]
+            },
+            {
+              "bulge": 1.0,
+              "point": [
+                6.696,
+                0.402
+              ]
+            },
+            {
+              "bulge": 0.0,
+              "point": [
+                3.696,
+                5.598
+              ]
+            }
+          ],
+          "closure": "closed"
+        },
+        "run_interval": [
+          0.0,
+          6.0
+        ],
+        "type": "section_recess"
+      }
+    }
+  ],
+  "polygonal_passage": [
+    {
+      "classification": {
+        "feature_kind": "passage",
+        "section_shape": "triangular"
+      },
+      "constituent_face_count": 3,
+      "defining_face_count": 3,
+      "geometry": {
+        "ends": {
+          "high": {
+            "condition": "open",
+            "gradient": [
+              0.0,
+              0.0
+            ]
+          },
+          "low": {
+            "condition": "open",
+            "gradient": [
+              0.0,
+              0.0
+            ]
+          }
+        },
+        "frame": {
+          "origin": [
+            0.0,
+            -0.333,
+            0.0
+          ],
+          "run": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "u": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "v": [
+            0.0,
+            1.0,
+            0.0
+          ]
+        },
+        "profile": {
+          "boundary": [
+            {
+              "bulge": 0.0,
+              "point": [
+                -4.0,
+                -2.6667
+              ]
+            },
+            {
+              "bulge": 0.0,
+              "point": [
+                4.0,
+                -2.6667
+              ]
+            },
+            {
+              "bulge": 0.0,
+              "point": [
+                0.0,
+                5.3333
+              ]
+            }
+          ],
+          "closure": "closed"
+        },
+        "run_interval": [
+          -6.0,
+          6.0
+        ],
+        "type": "section_recess"
+      }
+    }
+  ],
+  "polygonal_pocket": [
+    {
+      "classification": {
+        "feature_kind": "pocket",
+        "section_shape": "triangular"
+      },
+      "constituent_face_count": 4,
+      "defining_face_count": 3,
+      "geometry": {
+        "ends": {
+          "high": {
+            "condition": "open",
+            "gradient": [
+              0.0,
+              0.0
+            ]
+          },
+          "low": {
+            "condition": "capped",
+            "gradient": [
+              0.0,
+              0.0
+            ]
+          }
+        },
+        "frame": {
+          "origin": [
+            0.195,
+            -0.199,
+            -0.183
+          ],
+          "run": [
+            0.515038,
+            -0.250611,
+            0.819713
+          ],
+          "u": [
+            0.857167,
+            0.150583,
+            -0.492533
+          ],
+          "v": [
+            0.0,
+            0.956305,
+            0.292372
+          ]
+        },
+        "profile": {
+          "boundary": [
+            {
+              "bulge": 0.0,
+              "point": [
+                -3.637,
+                3.901
+              ]
+            },
+            {
+              "bulge": 0.0,
+              "point": [
+                -1.107,
+                -4.678
+              ]
+            },
+            {
+              "bulge": 0.0,
+              "point": [
+                4.744,
+                0.778
+              ]
+            }
+          ],
+          "closure": "closed"
+        },
+        "run_interval": [
+          4.0,
+          6.0
+        ],
+        "type": "section_recess"
+      }
+    }
+  ],
+  "rectangular_blind_slot": [
+    {
+      "classification": {
+        "feature_kind": "edge_open_recess",
+        "section_shape": "rectangular"
+      },
+      "constituent_face_count": 4,
+      "defining_face_count": 4,
+      "geometry": {
+        "ends": {
+          "high": {
+            "condition": "capped",
+            "gradient": [
+              0.0,
+              0.0
+            ]
+          },
+          "low": {
+            "condition": "open",
+            "gradient": [
+              0.0,
+              0.0
+            ]
+          }
+        },
+        "frame": {
+          "origin": [
+            0.0,
+            7.5,
+            0.0
+          ],
+          "run": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "u": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "v": [
+            0.0,
+            1.0,
+            0.0
+          ]
+        },
+        "profile": {
+          "boundary": [
+            {
+              "bulge": 0.0,
+              "point": [
+                -5.0,
+                2.5
+              ]
+            },
+            {
+              "bulge": 0.0,
+              "point": [
+                -5.0,
+                -2.5
+              ]
+            },
+            {
+              "bulge": 0.0,
+              "point": [
+                5.0,
+                -2.5
+              ]
+            },
+            {
+              "bulge": 0.0,
+              "point": [
+                5.0,
+                2.5
+              ]
+            }
+          ],
+          "closure": "open",
+          "opening": [
+            [
+              5.0,
+              2.5
+            ],
+            [
+              -5.0,
+              2.5
+            ]
+          ]
+        },
+        "run_interval": [
+          0.0,
+          20.0
+        ],
+        "type": "section_recess"
+      }
+    }
+  ],
+  "round_bottom_blind_slot": [
+    {
+      "classification": {
+        "feature_kind": "edge_open_recess",
+        "section_shape": "general"
+      },
+      "constituent_face_count": 4,
+      "defining_face_count": 4,
+      "geometry": {
+        "ends": {
+          "high": {
+            "condition": "open",
+            "gradient": [
+              0.0,
+              0.0
+            ]
+          },
+          "low": {
+            "condition": "capped",
+            "gradient": [
+              0.0,
+              0.0
+            ]
+          }
+        },
+        "frame": {
+          "origin": [
+            0.0,
+            -1.5,
+            0.0
+          ],
+          "run": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "u": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "v": [
+            0.0,
+            1.0,
+            0.0
+          ]
+        },
+        "profile": {
+          "boundary": [
+            {
+              "bulge": 0.414213562373,
+              "point": [
+                -5.0,
+                1.5
+              ]
+            },
+            {
+              "bulge": 0.0,
+              "point": [
+                -2.0,
+                -1.5
+              ]
+            },
+            {
+              "bulge": 0.414213562373,
+              "point": [
+                2.0,
+                -1.5
+              ]
+            },
+            {
+              "bulge": 0.0,
+              "point": [
+                5.0,
+                1.5
+              ]
+            }
+          ],
+          "closure": "open",
+          "opening": [
+            [
+              5.0,
+              1.5
+            ],
+            [
+              -5.0,
+              1.5
+            ]
+          ]
+        },
+        "run_interval": [
+          0.0,
+          20.0
+        ],
+        "type": "section_recess"
+      }
+    }
+  ]
+}
