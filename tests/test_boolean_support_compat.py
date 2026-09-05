@@ -3,7 +3,7 @@
 from itertools import permutations
 
 import pytest
-from build123d import Box, Compound, Face, Pos, Wire
+from build123d import Box, Compound, Face, Pos, Shape, ShapeList, Wire
 
 from quiddity import build_section_recess_document
 from quiddity._adjacency import FaceGraph
@@ -47,6 +47,31 @@ def test_overlapping_supports_form_a_union_not_a_sum():
 
 def test_a_remaining_fragment_cannot_be_dropped():
     assert not any(supported([rectangle(4, 6), rectangle(0, 4)], every_order=True))
+
+
+@pytest.mark.parametrize("return_api", ["shape_list", "compound", "none_when_empty"])
+def test_boolean_return_shapes_preserve_physical_support(monkeypatch, return_api):
+    """Exercise each supported return convention even on the locked dependency version."""
+    original_cut = Shape.cut
+    result_sizes = []
+
+    def adapted_cut(self, *others):
+        result = original_cut(self, *others)
+        if isinstance(result, ShapeList):
+            faces = [face for shape in result for face in shape.faces()]
+        else:
+            faces = list(result.faces()) if result is not None else []
+        result_sizes.append(len(faces))
+        if return_api == "shape_list":
+            return ShapeList(faces)
+        if return_api == "none_when_empty" and not faces:
+            return None
+        return Compound(faces)
+
+    monkeypatch.setattr(Shape, "cut", adapted_cut)
+    assert supported([rectangle(4, 6), rectangle(0, 4), rectangle(6, 10)]) == [True]
+    assert supported([rectangle(4, 6), rectangle(0, 4)]) == [False]
+    assert {0, 1, 2} <= set(result_sizes)
 
 
 def test_a_hole_in_support_remains_uncovered():
