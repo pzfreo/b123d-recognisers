@@ -28,8 +28,8 @@ classifiers = [
 ]
 
 [project.urls]
-Repository = "https://github.com/pzfreo/b123d-recognisers"
-Issues = "https://github.com/pzfreo/b123d-recognisers/issues"
+Repository = "https://github.com/pzfreo/quiddity"
+Issues = "https://github.com/pzfreo/quiddity/issues"
 
 [project.scripts]
 quiddity-capabilities = "quiddity.capabilities:main"

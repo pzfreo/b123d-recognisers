@@ -45,7 +45,8 @@ The SectionRecess JSON document has no package-branded format identifier to rena
 The SectionRecess migration in 0.4.15 remains a separate API change; see
 [the recess migration guide](section-recess-migration.md).
 
-The repository URL remains `https://github.com/pzfreo/b123d-recognisers`.
+The repository URL is now `https://github.com/pzfreo/quiddity`.
+Update local remotes to that URL; historical provenance keeps the original repository URL.
 Historical reports, release notes and ADRs retain their original package terminology.
 Before merging, configure pending trusted publishers for `quiddity` on TestPyPI and PyPI
 as documented in [releasing](releasing.md). A public project lookup returning 404 does not

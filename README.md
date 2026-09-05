@@ -1,7 +1,7 @@
 # Quiddity
 
-[![CI](https://github.com/pzfreo/b123d-recognisers/actions/workflows/ci.yml/badge.svg)](https://github.com/pzfreo/b123d-recognisers/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/pzfreo/b123d-recognisers/graph/badge.svg)](https://codecov.io/gh/pzfreo/b123d-recognisers)
+[![CI](https://github.com/pzfreo/quiddity/actions/workflows/ci.yml/badge.svg)](https://github.com/pzfreo/quiddity/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/pzfreo/quiddity/graph/badge.svg)](https://codecov.io/gh/pzfreo/quiddity)
 [![PyPI](https://img.shields.io/pypi/v/quiddity.svg)](https://pypi.org/project/quiddity/)
 [![Python versions](https://img.shields.io/pypi/pyversions/quiddity.svg)](https://pypi.org/project/quiddity/)
 [![License](https://img.shields.io/pypi/l/quiddity.svg)](LICENSE)
