@@ -6,6 +6,8 @@ Quiddity 0.2.0 is the second alpha; the former package was the first alpha.
 This starts Quiddity's own version history, not a downgrade of the old distribution.
 All inherited capabilities therefore have `introduced_in: 0.2.0` in Quiddity's manifest.
 Historical old-package versions remain unchanged. This release is not yet published.
+GitHub releases use `quiddity-v0.2.0` (and the same prefix subsequently), because the old
+package already has a `v0.2.0` tag. The Python package version is simply `0.2.0`.
 
 After the first Quiddity release:
 
