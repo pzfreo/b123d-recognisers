@@ -22,7 +22,7 @@ from build123d import (
     import_step,
 )
 
-from b123d_recognisers import (
+from quiddity import (
     OpenSectionProfile,
     PassageSectionVertex,
     SectionEnd,
@@ -31,11 +31,11 @@ from b123d_recognisers import (
     build_section_recess_document,
     recognise_section_recesses,
 )
-from b123d_recognisers._section_recess import (
+from quiddity._section_recess import (
     SectionRecessClassification,
     project_section_recess_geometry,
 )
-from b123d_recognisers._sections import (
+from quiddity._sections import (
     BodyRefIssuer,
     LocalFrame,
     PlanarSection,
@@ -84,14 +84,14 @@ def test_obround_material_probe_uses_only_the_owning_body():
 
 
 def test_obround_probe_contains_the_complete_semicircular_ends():
-    from b123d_recognisers._section_recess import _obround_prism
+    from quiddity._section_recess import _obround_prism
 
     probe = _obround_prism((0, 0, 1), (-6, 0, 0), (6, 0, 0), 3, 0, 6)
     assert probe.volume == pytest.approx((12 * 6 + math.pi * 3**2) * 6)
 
 
 def test_obround_kernel_probe_failure_refuses(monkeypatch):
-    import b123d_recognisers._section_recess as implementation
+    import quiddity._section_recess as implementation
 
     def failed(*_args):
         raise RuntimeError("kernel boolean failed")
@@ -102,8 +102,8 @@ def test_obround_kernel_probe_failure_refuses(monkeypatch):
 
 @pytest.mark.parametrize("fractions", [(1.0,), (0.0, 1.0), (0.0, 0.0, 0.0)])
 def test_obround_requires_empty_run_open_mouth_and_complete_backing(monkeypatch, fractions):
-    import b123d_recognisers._section_recess as implementation
-    from b123d_recognisers._adjacency import FaceGraph
+    import quiddity._section_recess as implementation
+    from quiddity._adjacency import FaceGraph
 
     graph = FaceGraph(_blind_pocket(angle=0))
     floor = next(node for node in graph.nodes
@@ -244,7 +244,7 @@ def test_section_recess_is_a_public_aggregate_family() -> None:
 
 
 def test_document_projects_completed_aggregate_inventory(monkeypatch) -> None:
-    import b123d_recognisers.result as result_module
+    import quiddity.result as result_module
 
     part = _blind_pocket()
     (record,) = recognise_section_recesses(part)

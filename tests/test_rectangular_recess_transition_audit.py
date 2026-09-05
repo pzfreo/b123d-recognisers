@@ -1,6 +1,6 @@
 """Evidence contracts for the issue #320 corpus transition classifier."""
 
-from b123d_recognisers._recess_records import Pocket, Slot
+from quiddity._recess_records import Pocket, Slot
 from tools.audit_rectangular_recess_frame_transitions import _containing_blind_pocket
 
 

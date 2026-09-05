@@ -51,7 +51,7 @@ Records are public geometry values, not OCP objects or handles into a recognitio
 ```python
 from dataclasses import dataclass
 
-from b123d_recognisers._record import Record
+from quiddity._record import Record
 
 
 @dataclass(frozen=True)
@@ -231,7 +231,7 @@ example_features=tuple(
 
 Then update the independent public surfaces:
 
-- import and `__all__` in `b123d_recognisers/__init__.py`;
+- import and `__all__` in `quiddity/__init__.py`;
 - the manual capability metadata in `tools/generate_capability_manifest.py`;
 - `docs/capabilities.md` with the supported and excluded geometry;
 - census binding, or an explicit `NotCounted` reason;

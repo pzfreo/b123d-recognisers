@@ -15,12 +15,12 @@ import pytest
 from build123d import Box, Compound, Cylinder, Edge, Pos, Rot, export_step, import_step
 from OCP.BRepFeat import BRepFeat_SplitShape
 
-from b123d_recognisers import recognise_slots
-from b123d_recognisers._adjacency import FaceEdges, FaceGraph
-from b123d_recognisers._candidates import FamilyId
-from b123d_recognisers._claims import ClaimLedger
-from b123d_recognisers._geometry import length_tol
-from b123d_recognisers._recess_core import (
+from quiddity import recognise_slots
+from quiddity._adjacency import FaceEdges, FaceGraph
+from quiddity._candidates import FamilyId
+from quiddity._claims import ClaimLedger
+from quiddity._geometry import length_tol
+from quiddity._recess_core import (
     _corner_notch_proposals,
     _pocket_proposals_one,
     _recognise_corner_notches,
@@ -28,11 +28,11 @@ from b123d_recognisers._recess_core import (
     _recognise_slots_one,
     _slot_proposals_one,
 )
-from b123d_recognisers._recess_faces import (
+from quiddity._recess_faces import (
     _cylinder_faces,
     _planar_faces,
 )
-from b123d_recognisers._recess_obround import (
+from quiddity._recess_obround import (
     _CAP_CLUSTER_FRAC,
     _compatible_end_groups,
     _extend_obround_ends,
@@ -41,7 +41,7 @@ from b123d_recognisers._recess_obround import (
     _obround_ends,
     _recognise_obround_from_ends,
 )
-from b123d_recognisers._recess_reduce import (
+from quiddity._recess_reduce import (
     _body_scoped_proposals,
     _Claims,
     _collapse_collinear,
@@ -52,8 +52,8 @@ from b123d_recognisers._recess_reduce import (
     _RecessProposal,
     _same_channel_line,
 )
-from b123d_recognisers._registry import PHYSICAL_DEFINITIONS, FullyAttributed
-from b123d_recognisers._volume_probe import PRISM_PROBE_FLOOR
+from quiddity._registry import PHYSICAL_DEFINITIONS, FullyAttributed
+from quiddity._volume_probe import PRISM_PROBE_FLOOR
 from tools._legacy_recognition import (
     recognise_pockets,
 )
@@ -232,7 +232,7 @@ def test_merge_and_collapse_union_occurrence_provenance() -> None:
 
 
 def test_real_crossing_collapse_absorbs_every_arm_in_geometric_order(monkeypatch) -> None:
-    import b123d_recognisers._recess_core as module
+    import quiddity._recess_core as module
 
     part = Box(120, 120, 20) - Box(60, 14, 20) - Box(14, 60, 20)
     graph = FaceGraph(part)
@@ -268,7 +268,7 @@ def test_real_crossing_collapse_absorbs_every_arm_in_geometric_order(monkeypatch
 
 def test_legacy_crossing_and_merge_projections_absorb_all_source_claims(monkeypatch) -> None:
     """The retained record-only reducers mirror the occurrence-safe provenance union."""
-    import b123d_recognisers._recess_core as module
+    import quiddity._recess_core as module
 
     part = Box(120, 120, 20) - Box(60, 14, 20) - Box(14, 60, 20)
     graph = FaceGraph(part)
@@ -404,7 +404,7 @@ def test_full_cylinder_and_lone_d_end_do_not_supply_obround_cap_pairs() -> None:
 
 @pytest.mark.parametrize("mutation", ["missing", "one", "axis", "radius", "depth"])
 def test_cap_matching_refusals_leave_the_legacy_record_unextended(monkeypatch, mutation) -> None:
-    import b123d_recognisers._recess_obround as module
+    import quiddity._recess_obround as module
 
     part = Box(100, 60, 20) - _obround(30, 12, 20)
     graph = FaceGraph(part)
@@ -572,7 +572,7 @@ def test_obround_end_rejects_nonconcave_surface_before_shape_classification() ->
 
 
 def test_occurrence_proposal_and_cap_helper_seams_are_closed() -> None:
-    package = ROOT / "src/b123d_recognisers"
+    package = ROOT / "src/quiddity"
     watched = {
         "_slot_proposals_one",
         "_pocket_proposals_one",
@@ -668,7 +668,7 @@ def test_occurrence_proposal_and_cap_helper_seams_are_closed() -> None:
 
 
 def test_competing_endpoint_cap_clusters_fail_closed(monkeypatch) -> None:
-    import b123d_recognisers._recess_obround as module
+    import quiddity._recess_obround as module
 
     part = Box(100, 60, 20) - _obround(30, 12, 20)
     graph = FaceGraph(part)

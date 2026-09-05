@@ -20,12 +20,12 @@ from build123d import (
     extrude,
 )
 
-import b123d_recognisers as r
-import b123d_recognisers.explanations as explanation_module
-from b123d_recognisers._candidates import FamilyId
-from b123d_recognisers._diagnostics import DiagnosticCode, DiagnosticStatus
-from b123d_recognisers._dispositions import Outcome, ReasonCode
-from b123d_recognisers._registry import PHYSICAL_DEFINITIONS
+import quiddity as r
+import quiddity.explanations as explanation_module
+from quiddity._candidates import FamilyId
+from quiddity._diagnostics import DiagnosticCode, DiagnosticStatus
+from quiddity._dispositions import Outcome, ReasonCode
+from quiddity._registry import PHYSICAL_DEFINITIONS
 
 
 def _u_passage():

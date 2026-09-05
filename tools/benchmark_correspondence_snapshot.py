@@ -13,8 +13,8 @@ import time
 
 from build123d import Box, Cylinder, Polygon, Pos, Rot, extrude
 
-from b123d_recognisers._correspondence import correspondence_snapshot
-from b123d_recognisers.result import _take_inventory
+from quiddity._correspondence import correspondence_snapshot
+from quiddity.result import _take_inventory
 
 SAMPLES = 5
 MISS_RATIO_CEILING = 0.50

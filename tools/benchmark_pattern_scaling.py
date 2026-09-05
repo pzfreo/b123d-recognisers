@@ -8,7 +8,7 @@ import json
 import statistics
 import time
 
-from b123d_recognisers import HoleRecord, RectGrid, recognise_hole_patterns
+from quiddity import HoleRecord, RectGrid, recognise_hole_patterns
 
 GRID_SIDES = (5, 7, 10, 14, 20)
 

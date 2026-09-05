@@ -19,9 +19,9 @@ from build123d import (
     extrude,
 )
 
-from b123d_recognisers._candidates import FamilyId
-from b123d_recognisers._registry import PHYSICAL_DEFINITIONS, FullyAttributed
-from b123d_recognisers.result import _take_inventory
+from quiddity._candidates import FamilyId
+from quiddity._registry import PHYSICAL_DEFINITIONS, FullyAttributed
+from quiddity.result import _take_inventory
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "tools"))
 

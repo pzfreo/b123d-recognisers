@@ -7,7 +7,7 @@ import re
 from pathlib import Path
 
 ROOT = Path(__file__).parents[1]
-RUNTIME = ROOT / "src" / "b123d_recognisers"
+RUNTIME = ROOT / "src" / "quiddity"
 README = ROOT / "README.md"
 ADR_DIR = ROOT / "docs" / "adr"
 
@@ -96,11 +96,11 @@ def test_readme_examples_only_use_api_the_package_actually_exports() -> None:
     """
 
     readme = README.read_text(encoding="utf-8")
-    exported = set(dir(importlib.import_module("b123d_recognisers")))
+    exported = set(dir(importlib.import_module("quiddity")))
 
     imported = {
         name.strip()
-        for match in re.findall(r"^from b123d_recognisers import (.+)$", readme, re.MULTILINE)
+        for match in re.findall(r"^from quiddity import (.+)$", readme, re.MULTILINE)
         for name in match.split(",")
     }
 

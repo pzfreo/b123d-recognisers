@@ -34,8 +34,8 @@ def _summary(values: list[float]) -> dict[str, float]:
 
 
 def _run_case(part: Any, enabled: bool) -> tuple[Any, float]:
-    import b123d_recognisers.plates as plates
-    from b123d_recognisers.result import _take_inventory
+    import quiddity.plates as plates
+    from quiddity.result import _take_inventory
 
     original = plates._oriented_cross_area
 
@@ -106,8 +106,8 @@ def _acceptable(report: dict[str, Any]) -> bool:
 
 
 def _framed(path: Path) -> Any:
-    from b123d_recognisers import import_step_geometry as import_step
-    from b123d_recognisers.frames import RefusedPartFrame, _normalize_part, infer_part_frame
+    from quiddity import import_step_geometry as import_step
+    from quiddity.frames import RefusedPartFrame, _normalize_part, infer_part_frame
 
     part = import_step(path)
     frame = infer_part_frame(part)

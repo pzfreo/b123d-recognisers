@@ -630,7 +630,7 @@ def _recognition(
     *,
     faces: list[Any],
 ) -> JsonObject:
-    from b123d_recognisers.result import PHYSICAL_FAMILIES, _take_inventory
+    from quiddity.result import PHYSICAL_FAMILIES, _take_inventory
 
     face_at = {face: at for at, face in enumerate(faces)}
     instances_at_face: dict[int, list[int]] = defaultdict(list)
@@ -763,7 +763,7 @@ def audit_model(files: ModelFiles, *, annotations_only: bool = False) -> JsonObj
     from OCP.BRepCheck import BRepCheck_Analyzer
     from OCP.Standard import Standard_Failure
 
-    from b123d_recognisers import import_step_geometry as import_step
+    from quiddity import import_step_geometry as import_step
 
     try:
         part = import_step(files.step)

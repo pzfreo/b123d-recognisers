@@ -6,7 +6,7 @@ from __future__ import annotations
 def recognition_snapshot(recognition, feature_census, part):
     """Run every public recogniser and required substrate with injected shared evidence."""
 
-    if getattr(recognition, "__name__", None) == "b123d_recognisers":
+    if getattr(recognition, "__name__", None) == "quiddity":
         from tools._legacy_recognition import feature_census, namespace
 
         recognition = namespace()

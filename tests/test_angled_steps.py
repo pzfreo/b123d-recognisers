@@ -43,27 +43,27 @@ from build123d import (
     import_step,
 )
 
-from b123d_recognisers import (
+from quiddity import (
     AngledStep,
     build_recognition_result,
     recognise_angled_steps,
     recognise_chamfers,
 )
-from b123d_recognisers._adjacency import (
+from quiddity._adjacency import (
     FaceEdges,
     FaceGraph,
     edge_face_map,
     nearest_axis_aligned_planes,
 )
-from b123d_recognisers._bevel import material_beyond_corner
-from b123d_recognisers._candidates import FamilyId
-from b123d_recognisers._claims import ClaimLedger
-from b123d_recognisers._reconcile import chamfers_that_are_not_angled_steps
-from b123d_recognisers.angled_steps import (
+from quiddity._bevel import material_beyond_corner
+from quiddity._candidates import FamilyId
+from quiddity._claims import ClaimLedger
+from quiddity._reconcile import chamfers_that_are_not_angled_steps
+from quiddity.angled_steps import (
     _closed_by_a_triangular_flat,
     _effective_linear_sides,
 )
-from b123d_recognisers.chamfers import BevelReject, classify_bevel, convex_bevel
+from quiddity.chamfers import BevelReject, classify_bevel, convex_bevel
 
 #: A 45° wedge whose in-plane legs are both 4 mm: rotating a square 45° puts its half-diagonal
 #: on each axis, so a side of 4·√2 cuts 4 mm into each of the two faces meeting at the edge.

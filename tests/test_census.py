@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from build123d import Box, Cylinder, Pos
 
-from b123d_recognisers.census import feature_census
+from quiddity.census import feature_census
 
 
 def _grooved_shaft():

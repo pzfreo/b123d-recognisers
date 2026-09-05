@@ -24,9 +24,9 @@ from typing import Any
 ROOT = Path(__file__).parents[1]
 sys.path.insert(0, str(ROOT))
 
-from b123d_recognisers._recess_core import _pocket_proposals_one  # noqa: E402
-from b123d_recognisers._rings import rings  # noqa: E402
-from b123d_recognisers.result import _take_inventory  # noqa: E402
+from quiddity._recess_core import _pocket_proposals_one  # noqa: E402
+from quiddity._rings import rings  # noqa: E402
+from quiddity.result import _take_inventory  # noqa: E402
 from tools.audit_mfcadpp_prismatic_pocket_gaps import (  # noqa: E402
     _accepted_evidence,
     _overlap,
@@ -66,7 +66,7 @@ def _audit_model(
 ) -> tuple[str, list[dict[str, Any]], dict[str, str] | None]:
     """Evaluate one model; only serializable evidence crosses the worker boundary."""
 
-    from b123d_recognisers import import_step_geometry
+    from quiddity import import_step_geometry
 
     part = import_step_geometry(path)
     try:

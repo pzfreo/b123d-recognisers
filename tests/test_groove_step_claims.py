@@ -24,14 +24,14 @@ import pytest
 from attribution_audit import attributed_run
 from build123d import Axis, Compound, Cylinder, Pos, Rotation
 
-import b123d_recognisers as r
-import b123d_recognisers.grooves as groove_module
-import b123d_recognisers.result as result_module
-from b123d_recognisers._adjacency import FaceGraph
-from b123d_recognisers._candidates import FamilyId
-from b123d_recognisers._claims import ClaimLedger
-from b123d_recognisers._dispositions import Outcome, ReasonCode
-from b123d_recognisers._reconcile import steps_that_are_not_grooves
+import quiddity as r
+import quiddity.grooves as groove_module
+import quiddity.result as result_module
+from quiddity._adjacency import FaceGraph
+from quiddity._candidates import FamilyId
+from quiddity._claims import ClaimLedger
+from quiddity._dispositions import Outcome, ReasonCode
+from quiddity._reconcile import steps_that_are_not_grooves
 
 
 def _grooved_shaft():

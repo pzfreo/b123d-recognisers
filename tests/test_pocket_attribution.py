@@ -31,19 +31,19 @@ from OCP.BRepBuilderAPI import BRepBuilderAPI_NurbsConvert
 from OCP.BRepFeat import BRepFeat_SplitShape
 from OCP.GeomAbs import GeomAbs_Cylinder
 
-from b123d_recognisers import build_framed_recognition_result
-from b123d_recognisers._adjacency import FaceEdges, FaceGraph, FaceNode
-from b123d_recognisers._candidates import FamilyId
-from b123d_recognisers._claims import ClaimLedger
-from b123d_recognisers._geometry import COORD_FLOOR
-from b123d_recognisers._recess_core import (
+from quiddity import build_framed_recognition_result
+from quiddity._adjacency import FaceEdges, FaceGraph, FaceNode
+from quiddity._candidates import FamilyId
+from quiddity._claims import ClaimLedger
+from quiddity._geometry import COORD_FLOOR
+from quiddity._recess_core import (
     _bounds_one_void,
     _pocket_proposals_one,
     _recognise_corner_notches,
     _shared_concave_boundaries,
     _uninterrupted_long_span,
 )
-from b123d_recognisers._recess_faces import (
+from quiddity._recess_faces import (
     _AXIS_ALIGNED_TOL,
     _FLOOR_COVER_FRAC,
     _FLOOR_TOL,
@@ -54,8 +54,8 @@ from b123d_recognisers._recess_faces import (
     _is_wall,
     _planar_faces,
 )
-from b123d_recognisers._recess_features import _discover_pockets, _PocketAttributionError
-from b123d_recognisers._recess_obround import (
+from quiddity._recess_features import _discover_pockets, _PocketAttributionError
+from quiddity._recess_obround import (
     _CAP_CLUSTER_FRAC,
     _OBROUND_RATIO_TOL,
     _extend_obround_proposals,
@@ -64,17 +64,17 @@ from b123d_recognisers._recess_obround import (
     _obround_ends,
     _recognise_obround_from_ends,
 )
-from b123d_recognisers._recess_records import Pocket, Slot
-from b123d_recognisers._recess_reduce import (
+from quiddity._recess_records import Pocket, Slot
+from quiddity._recess_reduce import (
     _VOID_VOL_FRAC,
     _gap_is_void,
     _prism_is_empty,
     _RecessProposal,
 )
-from b123d_recognisers._registry import PHYSICAL_DEFINITIONS, FullyAttributed
-from b123d_recognisers._run import start
-from b123d_recognisers.frames import FramedRecognitionResult
-from b123d_recognisers.result import _discover_all
+from quiddity._registry import PHYSICAL_DEFINITIONS, FullyAttributed
+from quiddity._run import start
+from quiddity.frames import FramedRecognitionResult
+from quiddity.result import _discover_all
 from tools._legacy_recognition import (
     recognise_pockets,
 )
@@ -557,7 +557,7 @@ def test_deep_and_translated_foreign_graph_refuse_without_prefix(foreign) -> Non
 
 
 def test_unexpected_geometry_value_error_is_not_relabelled(monkeypatch) -> None:
-    import b123d_recognisers._recess_features as module
+    import quiddity._recess_features as module
 
     part = Box(60, 40, 12) - Pos(0, 0, 4) * Box(20, 12, 8)
     ledger = ClaimLedger(FaceGraph(part))
@@ -572,7 +572,7 @@ def test_unexpected_geometry_value_error_is_not_relabelled(monkeypatch) -> None:
 
 
 def test_writer_graph_authority_and_unwrapped_stale_identity_fail_closed(monkeypatch) -> None:
-    import b123d_recognisers._recess_features as module
+    import quiddity._recess_features as module
 
     part = Box(60, 40, 12) - Pos(0, 0, 4) * Box(20, 12, 8)
     graph = FaceGraph(part)
@@ -796,7 +796,7 @@ def test_real_same_direction_d_caps_and_partial_or_displaced_floors_do_not_leak(
 
 
 def test_opposing_d_caps_reach_and_fail_the_side_wall_gate(monkeypatch) -> None:
-    import b123d_recognisers._recess_obround as module
+    import quiddity._recess_obround as module
 
     base = Box(60, 40, 12)
     cylinder = Pos(0, 0, 4) * Cylinder(5, 8)
@@ -925,7 +925,7 @@ def test_pocket_shared_predicate_thresholds_and_aag_boundaries_are_exact() -> No
 
 
 def test_candidate_empty_prism_and_reduction_void_allowance_are_separate(monkeypatch) -> None:
-    import b123d_recognisers._recess_reduce as module
+    import quiddity._recess_reduce as module
 
     spans = {"x": (-5.0, 5.0), "y": (-5.0, 5.0), "z": (-5.0, 5.0)}
     empty = Pos(20, 0, 0) * Box(1, 1, 1)
@@ -951,7 +951,7 @@ def test_candidate_empty_prism_and_reduction_void_allowance_are_separate(monkeyp
 
 @pytest.mark.parametrize("mutation", ["missing", "one", "axis", "radius", "depth"])
 def test_blind_pocket_cap_contract_refuses_every_mismatched_endpoint(monkeypatch, mutation) -> None:
-    import b123d_recognisers._recess_obround as module
+    import quiddity._recess_obround as module
 
     part = Box(80, 50, 14) - Pos(0, 0, 4) * _obround(30, 10, 10)
     graph = FaceGraph(part)
@@ -984,7 +984,7 @@ def test_blind_pocket_cap_contract_refuses_every_mismatched_endpoint(monkeypatch
 
 
 def test_merge_tolerance_and_max_span_boundaries_drive_pocket_lifecycle(monkeypatch) -> None:
-    import b123d_recognisers._recess_obround as module
+    import quiddity._recess_obround as module
 
     below = _MERGE_TOL - 1e-6
     above = _MERGE_TOL + 1e-6
@@ -1015,7 +1015,7 @@ def test_merge_tolerance_and_max_span_boundaries_drive_pocket_lifecycle(monkeypa
 
 
 def test_obround_acceptance_carries_one_floor_read_directly_into_membership(monkeypatch) -> None:
-    import b123d_recognisers._recess_obround as module
+    import quiddity._recess_obround as module
 
     part = Box(60, 40, 12) - Pos(0, 0, 4) * _obround(3, 10, 8)
     graph = FaceGraph(part)
@@ -1043,7 +1043,7 @@ def test_obround_acceptance_carries_one_floor_read_directly_into_membership(monk
 
 
 def test_stubby_cap_direction_is_mandatory(monkeypatch) -> None:
-    import b123d_recognisers._recess_obround as module
+    import quiddity._recess_obround as module
 
     part = Box(60, 40, 12) - Pos(0, 0, 4) * _obround(3, 10, 8)
     graph = FaceGraph(part)
@@ -1096,7 +1096,7 @@ def test_obround_ratio_requires_exactly_one_across_and_bulge_axis() -> None:
 @pytest.mark.parametrize("coordinate", [0, 1])
 @pytest.mark.parametrize("outside", [False, True])
 def test_cap_cluster_fraction_controls_split_patch_union(monkeypatch, coordinate, outside) -> None:
-    import b123d_recognisers._recess_obround as module
+    import quiddity._recess_obround as module
 
     radius = 10.0
     threshold = module.length_tol(radius, rel=_CAP_CLUSTER_FRAC)
@@ -1118,7 +1118,7 @@ def test_cap_cluster_fraction_controls_split_patch_union(monkeypatch, coordinate
 
 
 def test_cap_cluster_outside_boundary_remains_two_competing_physical_ends(monkeypatch) -> None:
-    import b123d_recognisers._recess_obround as module
+    import quiddity._recess_obround as module
 
     radius = 10.0
     threshold = module.length_tol(radius, rel=_CAP_CLUSTER_FRAC)
@@ -1142,7 +1142,7 @@ def test_cap_cluster_outside_boundary_remains_two_competing_physical_ends(monkey
 
 
 def test_same_endpoint_distinct_cap_groups_refuse_direct_and_aggregate(monkeypatch) -> None:
-    import b123d_recognisers._recess_obround as module
+    import quiddity._recess_obround as module
 
     part = Box(80, 50, 14) - Pos(0, 0, 4) * _obround(30, 10, 10)
     graph = FaceGraph(part)
@@ -1196,25 +1196,25 @@ def test_same_endpoint_distinct_cap_groups_refuse_direct_and_aggregate(monkeypat
 
 
 def test_private_writer_roster_and_prohibited_reads_are_closed_alias_aware() -> None:
-    package = ROOT / "src/b123d_recognisers"
+    package = ROOT / "src/quiddity"
     calls = []
     importers = []
     for path in package.glob("*.py"):
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
         bindings = {
-            node.name: f"b123d_recognisers.{path.stem}.{node.name}"
+            node.name: f"quiddity.{path.stem}.{node.name}"
             for node in tree.body
             if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
         }
         for statement in tree.body:
             if isinstance(statement, ast.ImportFrom) and statement.module:
                 prefix = (
-                    f"b123d_recognisers.{statement.module}" if statement.level else statement.module
+                    f"quiddity.{statement.module}" if statement.level else statement.module
                 )
                 for alias in statement.names:
                     target = f"{prefix}.{alias.name}"
                     bindings[alias.asname or alias.name] = target
-                    if target == "b123d_recognisers._recess_features._discover_pockets":
+                    if target == "quiddity._recess_features._discover_pockets":
                         importers.append(path.name)
             elif isinstance(statement, ast.Import):
                 for alias in statement.names:
@@ -1234,7 +1234,7 @@ def test_private_writer_roster_and_prohibited_reads_are_closed_alias_aware() -> 
         for node in ast.walk(tree):
             if not isinstance(node, ast.Call):
                 continue
-            if canonical(node.func) == "b123d_recognisers._recess_features._discover_pockets":
+            if canonical(node.func) == "quiddity._recess_features._discover_pockets":
                 calls.append((path.name, node))
     assert importers == ["_registry.py"]
     assert {path for path, _call in calls} == {"_registry.py", "_recess_features.py"}
@@ -1285,23 +1285,23 @@ def test_private_writer_roster_and_prohibited_reads_are_closed_alias_aware() -> 
         call = next(node for node in ast.walk(tree) if isinstance(node, ast.Call))
         return resolve(call.func)
 
-    target = "b123d_recognisers._recess_features._discover_pockets"
+    target = "quiddity._recess_features._discover_pockets"
     assert (
         resolved_call(
-            "import b123d_recognisers._recess_features\n"
-            "b123d_recognisers._recess_features._discover_pockets(part)"
+            "import quiddity._recess_features\n"
+            "quiddity._recess_features._discover_pockets(part)"
         )
         == target
     )
     assert (
         resolved_call(
-            "import b123d_recognisers._recess_features as recess\nrecess._discover_pockets(part)"
+            "import quiddity._recess_features as recess\nrecess._discover_pockets(part)"
         )
         == target
     )
     assert (
         resolved_call(
-            "from b123d_recognisers._recess_features import _discover_pockets as discover\n"
+            "from quiddity._recess_features import _discover_pockets as discover\n"
             "discover(part)"
         )
         == target
@@ -1309,17 +1309,17 @@ def test_private_writer_roster_and_prohibited_reads_are_closed_alias_aware() -> 
 
 
 def test_pocket_constructor_reducer_and_read_boundaries_are_closed() -> None:
-    package = ROOT / "src/b123d_recognisers"
+    package = ROOT / "src/quiddity"
 
     def bindings(tree, source):
         names = {
-            node.name: f"b123d_recognisers.{source[:-3]}.{node.name}"
+            node.name: f"quiddity.{source[:-3]}.{node.name}"
             for node in tree.body
             if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef))
         }
         for node in tree.body:
             if isinstance(node, ast.ImportFrom) and node.module:
-                prefix = f"b123d_recognisers.{node.module}" if node.level else node.module
+                prefix = f"quiddity.{node.module}" if node.level else node.module
                 for alias in node.names:
                     names[alias.asname or alias.name] = f"{prefix}.{alias.name}"
             elif isinstance(node, ast.Import):
@@ -1339,11 +1339,11 @@ def test_pocket_constructor_reducer_and_read_boundaries_are_closed() -> None:
         return ""
 
     watched = {
-        "b123d_recognisers._recess_core._pocket_proposals_one",
-        "b123d_recognisers._recess_reduce._body_scoped_proposals",
-        "b123d_recognisers._recess_reduce._RecessProposal",
-        "b123d_recognisers._recess_reduce._merge_proposals",
-        "b123d_recognisers._recess_obround._extend_obround_proposals",
+        "quiddity._recess_core._pocket_proposals_one",
+        "quiddity._recess_reduce._body_scoped_proposals",
+        "quiddity._recess_reduce._RecessProposal",
+        "quiddity._recess_reduce._merge_proposals",
+        "quiddity._recess_obround._extend_obround_proposals",
     }
     sites = {name: [] for name in watched}
     for path in package.glob("*.py"):
@@ -1368,15 +1368,15 @@ def test_pocket_constructor_reducer_and_read_boundaries_are_closed() -> None:
                 self.generic_visit(node)
 
         Visitor(path.name, names).visit(tree)
-    assert sites["b123d_recognisers._recess_core._pocket_proposals_one"] == [
+    assert sites["quiddity._recess_core._pocket_proposals_one"] == [
         ("_recess_core.py", "_recognise_pockets_one")
     ]
-    assert sites["b123d_recognisers._recess_reduce._body_scoped_proposals"] == [
+    assert sites["quiddity._recess_reduce._body_scoped_proposals"] == [
         ("_recess_features.py", "_discover_slots"),
         ("_recess_features.py", "_discover_slots"),
         ("_recess_features.py", "_discover_pockets"),
     ]
-    assert sorted(sites["b123d_recognisers._recess_reduce._RecessProposal"]) == sorted(
+    assert sorted(sites["quiddity._recess_reduce._RecessProposal"]) == sorted(
         [
             ("_recess_core.py", "_slot_proposals_one"),
             ("_recess_core.py", "_pocket_proposals_one"),
@@ -1388,11 +1388,11 @@ def test_pocket_constructor_reducer_and_read_boundaries_are_closed() -> None:
             ("_recess_reduce.py", "_combine_proposals"),
         ]
     )
-    assert sites["b123d_recognisers._recess_reduce._merge_proposals"] == [
+    assert sites["quiddity._recess_reduce._merge_proposals"] == [
         ("_recess_core.py", "_slot_proposals_one"),
         ("_recess_core.py", "_pocket_proposals_one"),
     ]
-    assert sites["b123d_recognisers._recess_obround._extend_obround_proposals"] == [
+    assert sites["quiddity._recess_obround._extend_obround_proposals"] == [
         ("_recess_core.py", "_slot_proposals_one"),
         ("_recess_core.py", "_pocket_proposals_one"),
     ]
@@ -1631,8 +1631,8 @@ def test_checked_1000_shared_walls_are_distinct_same_solid_occurrences() -> None
 
 
 def test_same_record_competing_bound_role_sets_refuse_without_prefix(monkeypatch) -> None:
-    import b123d_recognisers._recess_features as module
-    from b123d_recognisers._recess_reduce import _RecessProposal
+    import quiddity._recess_features as module
+    from quiddity._recess_reduce import _RecessProposal
 
     part = Box(60, 40, 12) - Pos(0, 0, 4) * Box(20, 12, 8)
     graph = FaceGraph(part)
@@ -1650,8 +1650,8 @@ def test_same_record_competing_bound_role_sets_refuse_without_prefix(monkeypatch
 
 
 def test_graph_identical_duplicate_returns_and_issues_one_exact_record(monkeypatch) -> None:
-    import b123d_recognisers._recess_features as module
-    from b123d_recognisers._recess_reduce import _RecessProposal
+    import quiddity._recess_features as module
+    from quiddity._recess_reduce import _RecessProposal
 
     part = Box(60, 40, 12) - Pos(0, 0, 4) * Box(20, 12, 8)
     graph = FaceGraph(part)
@@ -1671,7 +1671,7 @@ def test_graph_identical_duplicate_returns_and_issues_one_exact_record(monkeypat
 
 
 def test_missing_floor_refuses_before_publication(monkeypatch) -> None:
-    import b123d_recognisers._recess_features as module
+    import quiddity._recess_features as module
 
     part = Box(60, 40, 12) - Pos(0, 0, 4) * Box(20, 12, 8)
     graph = FaceGraph(part)
@@ -1693,7 +1693,7 @@ def test_missing_floor_refuses_before_publication(monkeypatch) -> None:
 
 
 def test_proposal_builder_refuses_a_candidate_without_retained_floor_nodes(monkeypatch) -> None:
-    import b123d_recognisers._recess_core as module
+    import quiddity._recess_core as module
 
     part = Box(60, 40, 12) - Pos(0, 0, 4) * Box(20, 12, 8)
     graph = FaceGraph(part)
@@ -1707,7 +1707,7 @@ def test_proposal_builder_refuses_a_candidate_without_retained_floor_nodes(monke
 def test_floor_shared_with_an_orthogonal_defining_route_is_published_once(monkeypatch) -> None:
     """One face may prove the floor in one route and a wall in a merged orthogonal route."""
 
-    import b123d_recognisers._recess_features as module
+    import quiddity._recess_features as module
 
     part = Box(60, 40, 12) - Pos(0, 0, 4) * Box(20, 12, 8)
     graph = FaceGraph(part)
@@ -1732,8 +1732,8 @@ def test_floor_shared_with_an_orthogonal_defining_route_is_published_once(monkey
 
 
 def test_aggregate_identical_duplicate_completes_one_occurrence_and_capability(monkeypatch) -> None:
-    import b123d_recognisers._recess_features as module
-    from b123d_recognisers._recess_reduce import _RecessProposal
+    import quiddity._recess_features as module
+    from quiddity._recess_reduce import _RecessProposal
 
     part = Box(60, 40, 12) - Pos(0, 0, 4) * Box(20, 12, 8)
     context = start(part)
@@ -1759,8 +1759,8 @@ def test_aggregate_identical_duplicate_completes_one_occurrence_and_capability(m
 
 
 def test_aggregate_competing_same_record_has_no_completion_or_capability(monkeypatch) -> None:
-    import b123d_recognisers._recess_features as module
-    from b123d_recognisers._recess_reduce import _RecessProposal
+    import quiddity._recess_features as module
+    from quiddity._recess_reduce import _RecessProposal
 
     part = Box(60, 40, 12) - Pos(0, 0, 4) * Box(20, 12, 8)
     context = start(part)
@@ -1794,7 +1794,7 @@ def test_aggregate_competing_same_record_has_no_completion_or_capability(monkeyp
 
 
 def test_aggregate_stale_second_occurrence_has_no_completed_state(monkeypatch) -> None:
-    import b123d_recognisers._recess_features as module
+    import quiddity._recess_features as module
 
     first = Box(60, 40, 12) - Pos(0, 0, 4) * Box(20, 12, 8)
     part = Compound([first, Pos(100, 0, 0) * deepcopy(first)])
@@ -1882,8 +1882,8 @@ def test_late_second_body_failure_has_no_pocket_prefix(monkeypatch) -> None:
 
 
 def test_shared_node_across_distinct_solidrefs_refuses_atomically(monkeypatch) -> None:
-    import b123d_recognisers._recess_features as module
-    from b123d_recognisers._recess_reduce import _RecessProposal
+    import quiddity._recess_features as module
+    from quiddity._recess_reduce import _RecessProposal
 
     first = Box(60, 40, 12) - Pos(0, 0, 4) * Box(20, 12, 8)
     part = Compound([first, Pos(100, 0, 0) * deepcopy(first)])
@@ -1919,8 +1919,8 @@ def test_shared_node_across_distinct_solidrefs_refuses_atomically(monkeypatch) -
 
 
 def test_empty_roles_and_cap_ambiguity_are_atomic_without_completion(monkeypatch) -> None:
-    import b123d_recognisers._recess_features as module
-    from b123d_recognisers._recess_reduce import _RecessProposal
+    import quiddity._recess_features as module
+    from quiddity._recess_reduce import _RecessProposal
 
     part = Box(60, 40, 12) - Pos(0, 0, 4) * Box(20, 12, 8)
     plain = _discover_pockets(part)[0]

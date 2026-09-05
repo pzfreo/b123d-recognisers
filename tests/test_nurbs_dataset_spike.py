@@ -10,8 +10,8 @@ from pathlib import Path
 from build123d import Box, Cylinder, Part, export_step
 from OCP.BRepBuilderAPI import BRepBuilderAPI_NurbsConvert
 
-from b123d_recognisers._adjacency import FaceGraph
-from b123d_recognisers._effective_surfaces import (
+from quiddity._adjacency import FaceGraph
+from quiddity._effective_surfaces import (
     AnalyticSurfaceFact,
     EffectiveSurfaceIndex,
     SurfaceProvenance,

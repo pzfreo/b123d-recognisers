@@ -17,8 +17,8 @@ from typing import Any, cast
 ROOT = Path(__file__).parents[1]
 sys.path.insert(0, str(ROOT))
 
-from b123d_recognisers._adjacency import FaceGraph, FaceNode  # noqa: E402
-from b123d_recognisers._section_passages import (  # noqa: E402
+from quiddity._adjacency import FaceGraph, FaceNode  # noqa: E402
+from quiddity._section_passages import (  # noqa: E402
     _COORD_FLOOR,
     _INTERVAL_TOL,
     _BodyAdapter,
@@ -35,7 +35,7 @@ from b123d_recognisers._section_passages import (  # noqa: E402
     _wall_run,
     section_ring_proposals,
 )
-from b123d_recognisers._sections import LocalFrame  # noqa: E402
+from quiddity._sections import LocalFrame  # noqa: E402
 from tools.audit_mfcadpp_cavity_enclosures import _two_ended_regions  # noqa: E402
 from tools.derive_mfcadpp_components import _components  # noqa: E402
 from tools.effectiveness_report import load_mfcadpp_truth  # noqa: E402
@@ -187,7 +187,7 @@ def main() -> int:
     if args.limit <= 0:
         parser.error("--limit must be positive")
 
-    from b123d_recognisers import import_step_geometry as import_step
+    from quiddity import import_step_geometry as import_step
 
     paths = sorted(args.root.glob("*.st*p"), key=lambda path: path.name)[: args.limit]
     if not paths:

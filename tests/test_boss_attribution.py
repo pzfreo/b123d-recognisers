@@ -28,19 +28,19 @@ from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.BRepBuilderAPI import BRepBuilderAPI_NurbsConvert
 from OCP.GeomAbs import GeomAbs_Cone, GeomAbs_Cylinder, GeomAbs_Plane, GeomAbs_Sphere, GeomAbs_Torus
 
-from b123d_recognisers import recognise_bosses
-from b123d_recognisers._adjacency import (
+from quiddity import recognise_bosses
+from quiddity._adjacency import (
     FaceEdges,
     FaceGraph,
     edge_face_map,
     frame_points_outward,
 )
-from b123d_recognisers._candidates import FamilyId
-from b123d_recognisers._claims import ClaimLedger
-from b123d_recognisers._cylinder_substrate import analyse_cylinders, full_cylinders
-from b123d_recognisers._effective_surfaces import SurfaceKind, SurfaceProvenance
-from b123d_recognisers._hole_features import _classify_end, _discover_bosses, _segments
-from b123d_recognisers.result import _take_inventory
+from quiddity._candidates import FamilyId
+from quiddity._claims import ClaimLedger
+from quiddity._cylinder_substrate import analyse_cylinders, full_cylinders
+from quiddity._effective_surfaces import SurfaceKind, SurfaceProvenance
+from quiddity._hole_features import _classify_end, _discover_bosses, _segments
+from quiddity.result import _take_inventory
 
 ROOT = Path(__file__).parents[1]
 
@@ -515,7 +515,7 @@ def test_late_binding_refuses_before_publication(monkeypatch: pytest.MonkeyPatch
 
 
 def test_missing_or_aliased_boss_source_roles_refuse_before_publication(monkeypatch) -> None:
-    import b123d_recognisers._hole_features as module
+    import quiddity._hole_features as module
 
     part = _bossed_plate()
     ledger = ClaimLedger(FaceGraph(part))
@@ -732,7 +732,7 @@ def test_foreign_writer_refuses_without_publication() -> None:
 
 
 def test_private_core_has_one_production_writer_caller_and_one_constructor() -> None:
-    package = ROOT / "src/b123d_recognisers"
+    package = ROOT / "src/quiddity"
     core_sites = []
     constructor_sites = []
     for path in package.glob("*.py"):
@@ -754,7 +754,7 @@ def test_private_core_has_one_production_writer_caller_and_one_constructor() -> 
 
 
 def test_boss_extraction_does_not_move_shared_surface_reader_authority() -> None:
-    from b123d_recognisers._effective_surfaces import SURFACE_READER_SITES
+    from quiddity._effective_surfaces import SURFACE_READER_SITES
 
     assert "_hole_features:_classify_end_uncached:adaptor:1" in SURFACE_READER_SITES
     assert "_hole_features:_classify_end_uncached:adaptor:2" in SURFACE_READER_SITES

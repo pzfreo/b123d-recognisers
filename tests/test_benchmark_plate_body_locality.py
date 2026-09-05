@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from build123d import Box, Compound, Pos
 
-from b123d_recognisers import recognise_plates
+from quiddity import recognise_plates
 from tools import benchmark_plate_body_locality as benchmark
 
 
@@ -11,7 +11,7 @@ def _bracket():
 
 
 def test_disabled_arm_recreates_only_the_whole_compound_plate_projection(monkeypatch) -> None:
-    import b123d_recognisers.plates as plates
+    import quiddity.plates as plates
 
     part = Compound(children=[Pos(-70, 0, 0) * _bracket(), Pos(70, 0, 0) * _bracket()])
     body_local = recognise_plates(part)

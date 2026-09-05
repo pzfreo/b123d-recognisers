@@ -8,10 +8,10 @@ import textwrap
 import typing
 from pathlib import Path
 
-import b123d_recognisers as recognition
+import quiddity as recognition
 
 ROOT = Path(__file__).parents[1]
-PACKAGE = ROOT / "src" / "b123d_recognisers"
+PACKAGE = ROOT / "src" / "quiddity"
 
 PUBLIC_MODULES = {
     "blends",
@@ -380,48 +380,48 @@ MODULE_SEAM_EDGES = {
 }
 
 ARC_READER_SITES = {
-    "src/b123d_recognisers/edge_open_circular_recesses:_ordered_chain:arc:1": ("legacy-contract"),
+    "src/quiddity/edge_open_circular_recesses:_ordered_chain:arc:1": ("legacy-contract"),
     **{
-        f"src/b123d_recognisers/edge_open_circular_recesses:"
+        f"src/quiddity/edge_open_circular_recesses:"
         f"recognise_edge_open_circular_pockets:arc:{ordinal}": disposition
         for ordinal, disposition in enumerate(
             ("exact-nonsmooth", "legacy-contract", "legacy-contract"), start=1
         )
     },
     **{
-        f"src/b123d_recognisers/edge_open_prismatic_recesses:"
+        f"src/quiddity/edge_open_prismatic_recesses:"
         f"_complete_wall_boundaries:arc:{ordinal}": "exact-nonsmooth"
         for ordinal in (1, 2)
     },
     **{
-        f"src/b123d_recognisers/edge_open_prismatic_recesses:"
+        f"src/quiddity/edge_open_prismatic_recesses:"
         f"recognise_edge_open_prismatic_recesses:arc:{ordinal}": disposition
         for ordinal, disposition in enumerate(
             ("exact-nonsmooth", "exact-nonsmooth", "legacy-contract"), start=1
         )
     },
-    "src/b123d_recognisers/circular_blind_steps:_is_concave:arc:1": "exact-nonsmooth",
-    "src/b123d_recognisers/circular_blind_steps:_is_convex:arc:1": "exact-nonsmooth",
-    "src/b123d_recognisers/paired_ramp_steps:_is_concave:arc:1": "exact-nonsmooth",
-    "src/b123d_recognisers/paired_ramp_steps:_is_convex:arc:1": "exact-nonsmooth",
-    "src/b123d_recognisers/through_steps:_relation:arc:1": "legacy-contract",
-    "src/b123d_recognisers/through_steps:_coplanar_region:arc:1": "legacy-contract",
-    "src/b123d_recognisers/through_steps:_common_terminal:arc:1": "legacy-contract",
-    "src/b123d_recognisers/through_steps:_common_terminal:arc:2": "legacy-contract",
-    "src/b123d_recognisers/round_bottom_slots:_cylinder_region:arc:1": "legacy-source",
-    "src/b123d_recognisers/round_bottom_slots:_cylinder_region:is_any_smooth:1": "any-smooth",
-    "src/b123d_recognisers/round_bottom_slots:_relation:arc:1": "legacy-contract",
-    "src/b123d_recognisers/round_bottom_slots:_common_convex_context:arc:1": "legacy-contract",
-    "src/b123d_recognisers/round_bottom_slots:_coplanar_region:arc:1": "legacy-source",
-    "src/b123d_recognisers/round_bottom_slots:_coplanar_region:is_any_smooth:1": "any-smooth",
-    "src/b123d_recognisers/round_bottom_slots:_recognise_one:arc:1": "legacy-contract",
-    "src/b123d_recognisers/rectangular_blind_slots:_recognise_one:arc:1": "exact-nonsmooth",
-    "src/b123d_recognisers/_recess_core:_bounded_inner_region:arc:1": "legacy-contract",
-    "src/b123d_recognisers/_section_passages:_bounded_inner_region:arc:1": "legacy-contract",
-    "src/b123d_recognisers/_section_passages:_mouth_regions:arc:1": "exact-nonsmooth",
-    "src/b123d_recognisers/prismatic_pockets:_inner_region:arc:1": "legacy-contract",
-    "src/b123d_recognisers/prismatic_pockets:_floor_seeded_regions:arc:1": "legacy-contract",
-    "src/b123d_recognisers/prismatic_pockets:_one_ended_regions:arc:1": "legacy-contract",
+    "src/quiddity/circular_blind_steps:_is_concave:arc:1": "exact-nonsmooth",
+    "src/quiddity/circular_blind_steps:_is_convex:arc:1": "exact-nonsmooth",
+    "src/quiddity/paired_ramp_steps:_is_concave:arc:1": "exact-nonsmooth",
+    "src/quiddity/paired_ramp_steps:_is_convex:arc:1": "exact-nonsmooth",
+    "src/quiddity/through_steps:_relation:arc:1": "legacy-contract",
+    "src/quiddity/through_steps:_coplanar_region:arc:1": "legacy-contract",
+    "src/quiddity/through_steps:_common_terminal:arc:1": "legacy-contract",
+    "src/quiddity/through_steps:_common_terminal:arc:2": "legacy-contract",
+    "src/quiddity/round_bottom_slots:_cylinder_region:arc:1": "legacy-source",
+    "src/quiddity/round_bottom_slots:_cylinder_region:is_any_smooth:1": "any-smooth",
+    "src/quiddity/round_bottom_slots:_relation:arc:1": "legacy-contract",
+    "src/quiddity/round_bottom_slots:_common_convex_context:arc:1": "legacy-contract",
+    "src/quiddity/round_bottom_slots:_coplanar_region:arc:1": "legacy-source",
+    "src/quiddity/round_bottom_slots:_coplanar_region:is_any_smooth:1": "any-smooth",
+    "src/quiddity/round_bottom_slots:_recognise_one:arc:1": "legacy-contract",
+    "src/quiddity/rectangular_blind_slots:_recognise_one:arc:1": "exact-nonsmooth",
+    "src/quiddity/_recess_core:_bounded_inner_region:arc:1": "legacy-contract",
+    "src/quiddity/_section_passages:_bounded_inner_region:arc:1": "legacy-contract",
+    "src/quiddity/_section_passages:_mouth_regions:arc:1": "exact-nonsmooth",
+    "src/quiddity/prismatic_pockets:_inner_region:arc:1": "legacy-contract",
+    "src/quiddity/prismatic_pockets:_floor_seeded_regions:arc:1": "legacy-contract",
+    "src/quiddity/prismatic_pockets:_one_ended_regions:arc:1": "legacy-contract",
     "tools/audit_mfcadpp_component_overlap:_internal_arcs:arc:1": "legacy-contract",
     "tools/audit_mfcadpp_cavity_enclosures:_expand:arc:1": "legacy-contract",
     "tools/audit_mfcadpp_cavity_enclosures:_convex_mouth:arc:1": "exact-nonsmooth",
@@ -429,27 +429,27 @@ ARC_READER_SITES = {
     "tools/audit_mfcadpp_oriented_circular_pockets:_one_candidate:arc:1": "exact-nonsmooth",
     "tools/audit_mfcadpp_oriented_circular_pockets:_one_candidate:arc:2": "legacy-contract",
     "tools/audit_mfcadpp_oriented_circular_pockets:_one_candidate:arc:3": "legacy-contract",
-    "src/b123d_recognisers/_section_recess:_one_obround_candidate:arc:1": (
+    "src/quiddity/_section_recess:_one_obround_candidate:arc:1": (
         "exact-nonsmooth"
     ),
-    "src/b123d_recognisers/_section_recess:_one_obround_candidate:arc:2": (
+    "src/quiddity/_section_recess:_one_obround_candidate:arc:2": (
         "legacy-contract"
     ),
-    "src/b123d_recognisers/_section_recess:_one_obround_candidate:arc:3": (
+    "src/quiddity/_section_recess:_one_obround_candidate:arc:3": (
         "legacy-contract"
     ),
-    "src/b123d_recognisers/_section_recess:_one_polygonal_candidate:arc:1": (
+    "src/quiddity/_section_recess:_one_polygonal_candidate:arc:1": (
         "exact-nonsmooth"
     ),
-    "src/b123d_recognisers/_section_recess:_one_polygonal_candidate:arc:2": (
+    "src/quiddity/_section_recess:_one_polygonal_candidate:arc:2": (
         "legacy-contract"
     ),
     "tools/audit_mfcadpp_floor_interrupted_pockets:_raw_regions:arc:1": "legacy-contract",
     "tools/audit_mfcadpp_floor_interrupted_pockets:_probe_region:arc:1": "exact-nonsmooth",
     "tools/audit_mfcadpp_floor_interrupted_pockets:_probe_region:arc:2": "exact-nonsmooth",
     "tools/audit_mfcadpp_floor_interrupted_pockets:_probe_region:arc:3": "exact-nonsmooth",
-    "src/b123d_recognisers/experimental_geometry:arc:arc:1": "facade-projection",
-    "src/b123d_recognisers/experimental_geometry:smooth_side:smooth_side:1": "facade-projection",
+    "src/quiddity/experimental_geometry:arc:arc:1": "facade-projection",
+    "src/quiddity/experimental_geometry:smooth_side:smooth_side:1": "facade-projection",
     "tests/test_slot_attribution:_fresh_occurrences_one:arc:1": "legacy-contract",
     "tests/test_slot_attribution:_fresh_occurrences_one:arc:2": "legacy-contract",
     "tests/test_slot_attribution:_fresh_occurrences_one:arc:3": "legacy-contract",
@@ -459,31 +459,31 @@ ARC_READER_SITES = {
     "tests/test_channel_attribution:_bounds_one_void:arc:4": "exact-nonsmooth",
     "tests/test_channel_attribution:_uninterrupted_span:arc:1": "opposed-nonsmooth",
     "tests/test_channel_attribution:_uninterrupted_span:arc:2": "opposed-nonsmooth",
-    "src/b123d_recognisers/_adjacency:smooth_region:arc:1": "legacy-source",
-    "src/b123d_recognisers/_adjacency:smooth_region:is_any_smooth:1": "any-smooth",
-    "src/b123d_recognisers/_adjacency:smooth_side:arc:1": "legacy-source",
-    "src/b123d_recognisers/_adjacency:smooth_side:is_any_smooth:1": "any-smooth",
-    "src/b123d_recognisers/_recess_core:_concave_boundary_regions:arc:1": "exact-nonsmooth",
-    "src/b123d_recognisers/_recess_core:_uninterrupted_long_span:arc:1": "opposed-nonsmooth",
-    "src/b123d_recognisers/_recess_core:_uninterrupted_long_span:arc:2": "opposed-nonsmooth",
-    "src/b123d_recognisers/_recess_core:_has_smooth_depth_closure:arc:1": "legacy-source",
-    "src/b123d_recognisers/_recess_core:_has_smooth_depth_closure:arc:2": "legacy-source",
-    "src/b123d_recognisers/_recess_core:_has_smooth_depth_closure:arc:3": "legacy-source",
-    "src/b123d_recognisers/_recess_core:_has_smooth_depth_closure:is_any_smooth:1": "any-smooth",
-    "src/b123d_recognisers/_recess_core:_has_smooth_depth_closure:is_any_smooth:2": "any-smooth",
-    "src/b123d_recognisers/_recess_core:_has_smooth_depth_closure:is_any_smooth:3": "any-smooth",
-    "src/b123d_recognisers/_recess_core:_bounds_one_void:arc:1": "pair-agreement",
-    "src/b123d_recognisers/_recess_core:_bounds_one_void:arc:2": "pair-agreement",
-    "src/b123d_recognisers/_blend_view:_native_neutral:arc:1": "legacy-contract",
-    "src/b123d_recognisers/_blend_view:_native_neutral:smooth_side:1": "side-read",
-    "src/b123d_recognisers/_blend_view:_classify:smooth_side:1": "side-read",
-    "src/b123d_recognisers/_blend_view:_classify:arc:1": "legacy-contract",
-    "src/b123d_recognisers/_blend_view:_classify:arc:2": "legacy-contract",
-    "src/b123d_recognisers/_blend_view:__init__:arc:1": "legacy-contract",
-    "src/b123d_recognisers/blends:_circular_proposal:arc:1": "legacy-contract",
-    "src/b123d_recognisers/blends:_circular_proposal:arc:2": "legacy-contract",
-    "src/b123d_recognisers/blends:_support_region:arc:1": "legacy-contract",
-    "src/b123d_recognisers/blends:_toroidal_components:arc:1": "legacy-contract",
+    "src/quiddity/_adjacency:smooth_region:arc:1": "legacy-source",
+    "src/quiddity/_adjacency:smooth_region:is_any_smooth:1": "any-smooth",
+    "src/quiddity/_adjacency:smooth_side:arc:1": "legacy-source",
+    "src/quiddity/_adjacency:smooth_side:is_any_smooth:1": "any-smooth",
+    "src/quiddity/_recess_core:_concave_boundary_regions:arc:1": "exact-nonsmooth",
+    "src/quiddity/_recess_core:_uninterrupted_long_span:arc:1": "opposed-nonsmooth",
+    "src/quiddity/_recess_core:_uninterrupted_long_span:arc:2": "opposed-nonsmooth",
+    "src/quiddity/_recess_core:_has_smooth_depth_closure:arc:1": "legacy-source",
+    "src/quiddity/_recess_core:_has_smooth_depth_closure:arc:2": "legacy-source",
+    "src/quiddity/_recess_core:_has_smooth_depth_closure:arc:3": "legacy-source",
+    "src/quiddity/_recess_core:_has_smooth_depth_closure:is_any_smooth:1": "any-smooth",
+    "src/quiddity/_recess_core:_has_smooth_depth_closure:is_any_smooth:2": "any-smooth",
+    "src/quiddity/_recess_core:_has_smooth_depth_closure:is_any_smooth:3": "any-smooth",
+    "src/quiddity/_recess_core:_bounds_one_void:arc:1": "pair-agreement",
+    "src/quiddity/_recess_core:_bounds_one_void:arc:2": "pair-agreement",
+    "src/quiddity/_blend_view:_native_neutral:arc:1": "legacy-contract",
+    "src/quiddity/_blend_view:_native_neutral:smooth_side:1": "side-read",
+    "src/quiddity/_blend_view:_classify:smooth_side:1": "side-read",
+    "src/quiddity/_blend_view:_classify:arc:1": "legacy-contract",
+    "src/quiddity/_blend_view:_classify:arc:2": "legacy-contract",
+    "src/quiddity/_blend_view:__init__:arc:1": "legacy-contract",
+    "src/quiddity/blends:_circular_proposal:arc:1": "legacy-contract",
+    "src/quiddity/blends:_circular_proposal:arc:2": "legacy-contract",
+    "src/quiddity/blends:_support_region:arc:1": "legacy-contract",
+    "src/quiddity/blends:_toroidal_components:arc:1": "legacy-contract",
     "tools/audit_mfcadpp_through_steps:_arc_name:arc:1": "legacy-contract",
     "tools/audit_mfcadpp_circular_blind_steps:_is_concave:arc:1": "exact-nonsmooth",
     "tools/audit_mfcadpp_circular_blind_steps:_is_convex:arc:1": "exact-nonsmooth",
@@ -660,13 +660,13 @@ def test_every_arc_reader_has_one_reviewed_disposition() -> None:
         "side-read",
     }
     assert not any(
-        site.startswith("src/b123d_recognisers/_recess_core:") and disposition == "side-read"
+        site.startswith("src/quiddity/_recess_core:") and disposition == "side-read"
         for site, disposition in ARC_READER_SITES.items()
     )
 
 
 def test_effective_surface_reader_roster_covers_every_raw_classification() -> None:
-    from b123d_recognisers._effective_surfaces import (
+    from quiddity._effective_surfaces import (
         SURFACE_READER_ROSTER,
         SURFACE_READER_SITES,
         SurfaceReaderDisposition,
@@ -770,7 +770,7 @@ def test_reconciler_never_imports_or_calls_discovery() -> None:
 
 
 def test_recess_reconciler_accepts_completed_records_and_frozen_evidence_only() -> None:
-    module = importlib.import_module("b123d_recognisers._reconcile")
+    module = importlib.import_module("quiddity._reconcile")
     hints = typing.get_type_hints(module.reconcile_recesses)
 
     assert set(hints) == {"slots", "pockets", "prismatic", "passages", "evidence", "return"}
@@ -778,7 +778,7 @@ def test_recess_reconciler_accepts_completed_records_and_frozen_evidence_only() 
 
 
 def test_aggregate_phase_functions_have_one_way_capability_boundaries() -> None:
-    module = importlib.import_module("b123d_recognisers.result")
+    module = importlib.import_module("quiddity.result")
     expected = {
         "_discover_all": {"context", "ledger", "return"},
         "_reconcile_existing": {"physical", "evidence", "return"},
@@ -790,7 +790,7 @@ def test_aggregate_phase_functions_have_one_way_capability_boundaries() -> None:
     for name, parameters in expected.items():
         assert set(typing.get_type_hints(getattr(module, name))) == parameters
 
-    run_module = importlib.import_module("b123d_recognisers._run")
+    run_module = importlib.import_module("quiddity._run")
     context = typing.get_type_hints(run_module.RecognitionContext)
     assert set(context) == {
         "part",
@@ -806,7 +806,7 @@ def test_aggregate_phase_functions_have_one_way_capability_boundaries() -> None:
 
     ledger_type = typing.get_type_hints(module._discover_all)["ledger"]
     assert ledger_type.__name__ == "ClaimLedger"
-    registry_module = importlib.import_module("b123d_recognisers._registry")
+    registry_module = importlib.import_module("quiddity._registry")
     writer_type = typing.get_type_hints(registry_module.DiscoveryServices)["writer"]
     assert writer_type.__name__ == "EvidenceWriter"
     assert {name for name in dir(writer_type) if not name.startswith("_")} == {
@@ -822,7 +822,7 @@ def test_aggregate_phase_functions_have_one_way_capability_boundaries() -> None:
 
 
 def test_only_result_orchestration_may_create_restricted_completed_inputs() -> None:
-    candidate_module = importlib.import_module("b123d_recognisers._candidates")
+    candidate_module = importlib.import_module("quiddity._candidates")
     assert {name for name in dir(candidate_module.CompletedInputs) if not name.startswith("_")} == {
         "occurrences",
         "records",
@@ -876,7 +876,7 @@ def test_private_section_adapters_are_only_used_by_the_unified_projection() -> N
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
         if any(
             isinstance(node, ast.ImportFrom)
-            and node.module == "b123d_recognisers._section_adapters"
+            and node.module == "quiddity._section_adapters"
             for node in ast.walk(tree)
         ):
             importers.append(path.name)
@@ -884,7 +884,7 @@ def test_private_section_adapters_are_only_used_by_the_unified_projection() -> N
 
 
 def test_projection_family_bindings_match_the_registry() -> None:
-    module = importlib.import_module("b123d_recognisers.result")
+    module = importlib.import_module("quiddity.result")
     source = inspect.getsource(module._project_result)
     tree = ast.parse(textwrap.dedent(source))
     result_call = next(
@@ -907,7 +907,7 @@ def test_projection_family_bindings_match_the_registry() -> None:
             assert len(families) == 1, keyword.arg
             projected[typing.cast(str, keyword.arg)] = families.pop()
 
-    registry = importlib.import_module("b123d_recognisers._registry")
+    registry = importlib.import_module("quiddity._registry")
     expected = {
         definition.result_field: definition.family.name
         for definition in registry.PHYSICAL_DEFINITIONS
@@ -920,7 +920,7 @@ def test_projection_family_bindings_match_the_registry() -> None:
 
 
 def test_residual_reducer_cannot_rediscover_or_mutate_geometry() -> None:
-    module = importlib.import_module("b123d_recognisers._diagnostics")
+    module = importlib.import_module("quiddity._diagnostics")
     hints = typing.get_type_hints(module.diagnose_residuals)
     assert set(hints) == {"reconciliation", "evidence", "return"}
 
@@ -972,7 +972,7 @@ def test_migrated_discovery_cores_receive_write_only_evidence() -> None:
         ("angled_steps", "_discover_angled_steps"),
         ("passages", "_discover_section_passages"),
     ):
-        module = importlib.import_module(f"b123d_recognisers.{module_name}")
+        module = importlib.import_module(f"quiddity.{module_name}")
         hints = typing.get_type_hints(getattr(module, function_name))
         assert "ClaimLedger" not in {getattr(hint, "__name__", "") for hint in hints.values()}
         assert "EvidenceSink" in repr(hints["sink"])
@@ -996,13 +996,13 @@ def test_migrated_discovery_cores_receive_write_only_evidence() -> None:
 def _package_import_graph() -> dict[str, set[str]]:
     paths = {path.stem: path for path in PACKAGE.glob("*.py")}
     graph: dict[str, set[str]] = {module: set() for module in paths}
-    package = "b123d_recognisers"
+    package = "quiddity"
     prefix = f"{package}."
     for module, path in paths.items():
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
         for node in ast.walk(tree):
             if isinstance(node, ast.ImportFrom) and node.module == package:
-                # `from b123d_recognisers import chamfers` names the module as an alias, not in
+                # `from quiddity import chamfers` names the module as an alias, not in
                 # node.module. Reading only node.module made this form invisible, so a seam or
                 # cycle violation written this way passed every check in this file.
                 names = [f"{prefix}{alias.name}" for alias in node.names]
@@ -1128,8 +1128,8 @@ def test_f3b_blend_index_and_view_have_only_reviewed_production_call_sites() -> 
 
         qualified = resolver(aliases)
         guarded_qualified = {
-            "b123d_recognisers._blend_view.BlendCollapseIndex",
-            "b123d_recognisers._effective_surfaces.EffectiveSurfaceIndex",
+            "quiddity._blend_view.BlendCollapseIndex",
+            "quiddity._effective_surfaces.EffectiveSurfaceIndex",
         }
         changed = True
         while changed:
@@ -1150,7 +1150,7 @@ def test_f3b_blend_index_and_view_have_only_reviewed_production_call_sites() -> 
             for node in ast.walk(tree)
             if isinstance(node, ast.Assign)
             and isinstance(node.value, ast.Call)
-            and qualified(node.value.func) == "b123d_recognisers._blend_view.BlendCollapseIndex"
+            and qualified(node.value.func) == "quiddity._blend_view.BlendCollapseIndex"
             for target in node.targets
             if isinstance(target, ast.Name)
         }
@@ -1184,8 +1184,8 @@ def test_f3b_blend_index_and_view_have_only_reviewed_production_call_sites() -> 
                 )
                 or qualified(node.value)
                 in {
-                    "b123d_recognisers._blend_view.BlendCollapseIndex.view",
-                    "b123d_recognisers._blend_view.CollapsedGraphView.expand_arc",
+                    "quiddity._blend_view.BlendCollapseIndex.view",
+                    "quiddity._blend_view.CollapsedGraphView.expand_arc",
                 }
             )
             for target in node.targets
@@ -1246,13 +1246,13 @@ def test_f3b_blend_index_and_view_have_only_reviewed_production_call_sites() -> 
                 continue
             name = qualified(node.func)
             if name in {
-                "b123d_recognisers._blend_view.BlendCollapseIndex",
-                "b123d_recognisers._effective_surfaces.EffectiveSurfaceIndex",
+                "quiddity._blend_view.BlendCollapseIndex",
+                "quiddity._effective_surfaces.EffectiveSurfaceIndex",
             }:
                 found.add((path_name, name.rsplit(".", 1)[-1]))
             elif name in {
-                "b123d_recognisers._blend_view.BlendCollapseIndex.view",
-                "b123d_recognisers._blend_view.CollapsedGraphView.expand_arc",
+                "quiddity._blend_view.BlendCollapseIndex.view",
+                "quiddity._blend_view.CollapsedGraphView.expand_arc",
             }:
                 owner, method = name.rsplit(".", 2)[-2:]
                 found.add((path_name, f"{owner}.{method}"))
@@ -1321,8 +1321,8 @@ def test_f3b_blend_index_and_view_have_only_reviewed_production_call_sites() -> 
         ("_run.py", "EffectiveSurfaceIndex"),
     }
     mutation_imports = """
-from b123d_recognisers._blend_view import BlendCollapseIndex, CollapsedGraphView
-from b123d_recognisers._effective_surfaces import EffectiveSurfaceIndex
+from quiddity._blend_view import BlendCollapseIndex, CollapsedGraphView
+from quiddity._effective_surfaces import EffectiveSurfaceIndex
 """
     mutations = (
         "index = BlendCollapseIndex(graph, EffectiveSurfaceIndex(graph))\n"
@@ -1352,15 +1352,15 @@ def test_no_accidental_public_modules() -> None:
 
 
 def test_compatibility_facades_preserve_export_identity_and_module_paths() -> None:
-    feature_facade = importlib.import_module("b123d_recognisers._features")
-    recess_facade = importlib.import_module("b123d_recognisers.slots")
+    feature_facade = importlib.import_module("quiddity._features")
+    recess_facade = importlib.import_module("quiddity.slots")
     implementations = {
         **{
-            name: importlib.import_module("b123d_recognisers._cylinder_substrate")
+            name: importlib.import_module("quiddity._cylinder_substrate")
             for name in ("analyse_cylinders", "full_cylinders")
         },
         **{
-            name: importlib.import_module("b123d_recognisers._hole_features")
+            name: importlib.import_module("quiddity._hole_features")
             for name in (
                 "BossRecord",
                 "CounterBore",
@@ -1371,7 +1371,7 @@ def test_compatibility_facades_preserve_export_identity_and_module_paths() -> No
             )
         },
         **{
-            name: importlib.import_module("b123d_recognisers._hole_patterns")
+            name: importlib.import_module("quiddity._hole_patterns")
             for name in (
                 "BoltCircle",
                 "HoleSpec",
@@ -1384,7 +1384,7 @@ def test_compatibility_facades_preserve_export_identity_and_module_paths() -> No
     for name, implementation in implementations.items():
         assert getattr(recognition, name) is getattr(feature_facade, name)
         assert getattr(feature_facade, name) is getattr(implementation, name)
-        assert getattr(recognition, name).__module__ == "b123d_recognisers._features"
+        assert getattr(recognition, name).__module__ == "quiddity._features"
 
     # The property that matters is that a consumer can resolve these annotations after the
     # move, not that they are spelled with particular characters. Comparing the literal strings
@@ -1395,21 +1395,21 @@ def test_compatibility_facades_preserve_export_identity_and_module_paths() -> No
         assert "width_axis" in hints
     assert typing.get_type_hints(recognition.recognise_slots)
 
-    recess_records = importlib.import_module("b123d_recognisers._recess_records")
-    recess_features = importlib.import_module("b123d_recognisers._recess_features")
-    recess_patterns = importlib.import_module("b123d_recognisers._recess_patterns")
+    recess_records = importlib.import_module("quiddity._recess_records")
+    recess_features = importlib.import_module("quiddity._recess_features")
+    recess_patterns = importlib.import_module("quiddity._recess_patterns")
     for name in ("Slot", "SlotArray", "SlotGrid"):
         assert getattr(recognition, name) is getattr(recess_facade, name)
         assert getattr(recess_facade, name) is getattr(recess_records, name)
-        assert getattr(recognition, name).__module__ == "b123d_recognisers.slots"
+        assert getattr(recognition, name).__module__ == "quiddity.slots"
     for name in ("recognise_slots",):
         assert getattr(recognition, name) is getattr(recess_facade, name)
         assert getattr(recess_facade, name) is getattr(recess_features, name)
-        assert getattr(recognition, name).__module__ == "b123d_recognisers.slots"
+        assert getattr(recognition, name).__module__ == "quiddity.slots"
     for name in ("recognise_slot_patterns",):
         assert getattr(recognition, name) is getattr(recess_facade, name)
         assert getattr(recess_facade, name) is getattr(recess_patterns, name)
-        assert getattr(recognition, name).__module__ == "b123d_recognisers.slots"
+        assert getattr(recognition, name).__module__ == "quiddity.slots"
     for name in (
         "BoltCircle",
         "BossRecord",
@@ -1419,7 +1419,7 @@ def test_compatibility_facades_preserve_export_identity_and_module_paths() -> No
         "LinearArray",
         "RectGrid",
     ):
-        assert getattr(recognition, name).__module__ == "b123d_recognisers._features"
+        assert getattr(recognition, name).__module__ == "quiddity._features"
 
     moved_records = (
         "BoltCircle",

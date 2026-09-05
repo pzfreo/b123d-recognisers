@@ -18,8 +18,8 @@ from __future__ import annotations
 from attribution_audit import assert_groove_role, attributed_run, unattributed_run
 from build123d import Axis, Cone, Cylinder, GeomType, Pos, Rot, chamfer, fillet
 
-from b123d_recognisers import recognise_grooves
-from b123d_recognisers._candidates import FamilyId
+from quiddity import recognise_grooves
+from quiddity._candidates import FamilyId
 
 
 def _shaft_with_reduced_band(*, wall_r=15.0, band_r=12.0, lo_h=20.0, band_h=5.0, hi_h=20.0):

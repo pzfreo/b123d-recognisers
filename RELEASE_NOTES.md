@@ -1,5 +1,16 @@
 # Release notes
 
+## 0.2.0 — Quiddity second alpha (unreleased)
+
+Quiddity starts its own version history at 0.2.0. The earlier `b123d-recognisers`
+release line below records the first alpha; those versions and artifacts are unchanged.
+
+- Rename the distribution to `quiddity`, the Python namespace to `quiddity`, and the
+  capability CLI to `quiddity-capabilities`. There is no old-import compatibility alias.
+  Rename public manifest identifiers to `quiddity-capabilities`, `quiddity-evidence-api`
+  and `quiddity-inspection-api`; recognition behavior and geometry schemas are unchanged. See
+  [the Quiddity migration guide](docs/quiddity-migration.md).
+
 ## 0.4.15
 
 **Breaking API change despite the patch version.** Published as a patch at the maintainer's

@@ -11,7 +11,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from b123d_recognisers import (  # noqa: E402
+from quiddity import (  # noqa: E402
     build_section_recess_document,
     import_step_geometry,
 )

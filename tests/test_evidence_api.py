@@ -10,8 +10,8 @@ from pathlib import Path
 import pytest
 from build123d import Box, Compound, Pos, RegularPolygon, Rot, extrude
 
-import b123d_recognisers.evidence as evidence_module
-from b123d_recognisers.evidence import (
+import quiddity.evidence as evidence_module
+from quiddity.evidence import (
     EVIDENCE_API_FORMAT,
     EVIDENCE_API_FORMAT_VERSION,
     AssociationMeasure,
@@ -24,10 +24,10 @@ from b123d_recognisers.evidence import (
     evidence_api_manifest,
     evidence_api_manifest_json,
 )
-from b123d_recognisers.result import build_raw_recognition_result
+from quiddity.result import build_raw_recognition_result
 
 ROOT = Path(__file__).parents[1]
-MANIFEST = ROOT / "src" / "b123d_recognisers" / "evidence_api.json"
+MANIFEST = ROOT / "src" / "quiddity" / "evidence_api.json"
 
 
 def _two_equal_level_bodies() -> Compound:

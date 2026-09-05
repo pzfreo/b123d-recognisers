@@ -24,9 +24,9 @@ from __future__ import annotations
 import pytest
 from build123d import Box, Cylinder, Pos
 
-import b123d_recognisers as r
-from b123d_recognisers._adjacency import FaceGraph
-from b123d_recognisers._claims import ClaimLedger
+import quiddity as r
+from quiddity._adjacency import FaceGraph
+from quiddity._claims import ClaimLedger
 
 _AXES = {"x": 0, "y": 1, "z": 2}
 

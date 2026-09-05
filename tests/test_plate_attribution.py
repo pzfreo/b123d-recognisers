@@ -28,20 +28,20 @@ from OCP.BRepGProp import BRepGProp
 from OCP.GeomAbs import GeomAbs_Plane
 from OCP.GProp import GProp_GProps
 
-from b123d_recognisers import (
+from quiddity import (
     FramedRecognitionResult,
     build_framed_recognition_result,
     build_recognition_result,
     recognise_plates,
 )
-from b123d_recognisers._adjacency import FaceGraph, FaceNode, SolidRef
-from b123d_recognisers._candidates import FamilyId
-from b123d_recognisers._claims import ClaimLedger
-from b123d_recognisers._geometry import clears_threshold, cluster_coordinates
-from b123d_recognisers._registry import PHYSICAL_DEFINITIONS
-from b123d_recognisers._run import start
-from b123d_recognisers.plates import Plate, _discover_plates, _PlateAttributionError
-from b123d_recognisers.result import _discover_all, _take_inventory
+from quiddity._adjacency import FaceGraph, FaceNode, SolidRef
+from quiddity._candidates import FamilyId
+from quiddity._claims import ClaimLedger
+from quiddity._geometry import clears_threshold, cluster_coordinates
+from quiddity._registry import PHYSICAL_DEFINITIONS
+from quiddity._run import start
+from quiddity.plates import Plate, _discover_plates, _PlateAttributionError
+from quiddity.result import _discover_all, _take_inventory
 from tests.golden.plates_pads_levels_and_slanted_steps.fixture import build_fixture
 
 ROOT = Path(__file__).parents[1]
@@ -390,7 +390,7 @@ def test_bound_identity_collapses_wrappers_duplicates_and_reversed_order(monkeyp
 
 
 def test_same_key_distinct_bound_role_pairs_refuse_atomically(monkeypatch) -> None:
-    import b123d_recognisers.plates as module
+    import quiddity.plates as module
 
     part = build_fixture()
     ledger = ClaimLedger(FaceGraph(part))
@@ -639,7 +639,7 @@ def test_foreign_and_late_body_failure_are_atomic(monkeypatch) -> None:
 
 @pytest.mark.parametrize("mode", ["deep", "stale", "reuse"])
 def test_invalid_proposal_identity_refuses_before_any_issue(monkeypatch, mode: str) -> None:
-    import b123d_recognisers.plates as module
+    import quiddity.plates as module
 
     part = build_fixture()
     ledger = ClaimLedger(FaceGraph(part))
@@ -667,7 +667,7 @@ def test_invalid_proposal_identity_refuses_before_any_issue(monkeypatch, mode: s
 
 @pytest.mark.parametrize("mode", ["empty", "overlap"])
 def test_empty_and_overlapping_bound_roles_refuse_atomically(monkeypatch, mode: str) -> None:
-    import b123d_recognisers.plates as module
+    import quiddity.plates as module
 
     part = build_fixture()
     ledger = ClaimLedger(FaceGraph(part))
@@ -731,7 +731,7 @@ def test_empty_completed_turned_roster_does_not_veto_plate_solids() -> None:
 
 
 def test_plate_private_core_and_registry_route_are_closed() -> None:
-    registry = (ROOT / "src/b123d_recognisers/_registry.py").read_text(encoding="utf-8")
+    registry = (ROOT / "src/quiddity/_registry.py").read_text(encoding="utf-8")
     tree = ast.parse(registry)
     plates = next(
         node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == "_plates"
@@ -749,7 +749,7 @@ def test_plate_private_core_and_registry_route_are_closed() -> None:
 
 
 def test_plate_import_constructor_and_capability_rosters_are_closed() -> None:
-    package = ROOT / "src/b123d_recognisers"
+    package = ROOT / "src/quiddity"
     core_sites: list[tuple[str, ast.Call]] = []
     constructors: list[tuple[str, ast.Call]] = []
     proposal_sites: list[tuple[str, ast.Call]] = []
@@ -830,7 +830,7 @@ def test_plate_import_constructor_and_capability_rosters_are_closed() -> None:
 
 def test_registry_uses_restricted_turned_occurrences_for_body_local_plate_veto() -> None:
     tree = ast.parse(
-        (ROOT / "src/b123d_recognisers/_registry.py").read_text(encoding="utf-8")
+        (ROOT / "src/quiddity/_registry.py").read_text(encoding="utf-8")
     )
     function = next(
         node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == "_plates"

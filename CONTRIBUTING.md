@@ -47,7 +47,7 @@ One canonical Linux/Python 3.12 CI job records line and branch coverage, prints 
 writes `coverage.xml`, and fails below the 91% combined floor:
 
 ```bash
-uv run pytest --cov=b123d_recognisers --cov-branch --cov-report=term-missing \
+uv run pytest --cov=quiddity --cov-branch --cov-report=term-missing \
   --cov-report=xml:coverage.xml --cov-fail-under=91
 ```
 

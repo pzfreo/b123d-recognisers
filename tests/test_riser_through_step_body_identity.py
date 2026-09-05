@@ -7,7 +7,7 @@ from pathlib import Path
 
 from build123d import Align, Axis, Box, Compound, Pos, export_step, import_step
 
-from b123d_recognisers import (
+from quiddity import (
     FramedRecognitionResult,
     build_framed_recognition_result,
     recognise_risers,

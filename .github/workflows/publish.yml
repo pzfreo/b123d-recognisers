@@ -37,7 +37,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: testpypi
-      url: https://test.pypi.org/p/b123d-recognisers
+      url: https://test.pypi.org/p/quiddity
     permissions:
       contents: read
       id-token: write # Trusted Publishing exchanges OIDC for a short-lived index token.
@@ -92,7 +92,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: pypi
-      url: https://pypi.org/p/b123d-recognisers
+      url: https://pypi.org/p/quiddity
     permissions:
       id-token: write # Trusted Publishing exchanges OIDC for a short-lived index token.
     steps:

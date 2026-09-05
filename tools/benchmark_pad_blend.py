@@ -34,7 +34,7 @@ def _summary(values: list[float]) -> dict[str, float]:
 
 
 def _run_case(part: Any, enabled: bool, operation: Callable[[Any], Any]) -> tuple[Any, float]:
-    import b123d_recognisers.pads as pads
+    import quiddity.pads as pads
 
     original: Any = pads._recognise_blended_rectangular_pads_one
     if not enabled:
@@ -88,9 +88,9 @@ def main() -> int:
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
 
-    from b123d_recognisers import feature_census
-    from b123d_recognisers import import_step_geometry as import_step
-    from b123d_recognisers.result import _take_inventory
+    from quiddity import feature_census
+    from quiddity import import_step_geometry as import_step
+    from quiddity.result import _take_inventory
 
     if args.workload == "mfcadpp":
         if args.root is None:

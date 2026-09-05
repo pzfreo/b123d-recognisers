@@ -19,7 +19,7 @@ import math
 import pytest
 from build123d import Vector
 
-from b123d_recognisers.polygonal_bosses import _regular_ring_order, _ring_profile
+from quiddity.polygonal_bosses import _regular_ring_order, _ring_profile
 
 ANGLE_TOL = math.radians(2)
 TOL = 0.2

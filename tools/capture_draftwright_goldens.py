@@ -18,7 +18,7 @@ GOLDEN_ROOT = ROOT / "tests" / "golden"
 
 
 def _load_fixture(path: Path):
-    module_name = f"b123d_recognisers_golden_{path.parent.name}"
+    module_name = f"quiddity_golden_{path.parent.name}"
     spec = importlib.util.spec_from_file_location(module_name, path)
     if spec is None or spec.loader is None:
         raise RuntimeError(f"cannot load fixture {path}")

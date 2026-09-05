@@ -30,7 +30,7 @@ from OCP.BRepBuilderAPI import BRepBuilderAPI_MakeEdge
 from OCP.BRepFeat import BRepFeat_SplitShape
 from OCP.GeomAbs import GeomAbs_Torus
 
-from b123d_recognisers import (
+from quiddity import (
     Blend,
     CircularBlendPath,
     StraightBlendPath,
@@ -38,13 +38,13 @@ from b123d_recognisers import (
     import_step_geometry,
     recognise_blends,
 )
-from b123d_recognisers._adjacency import FaceGraph
-from b123d_recognisers._candidates import FamilyId
-from b123d_recognisers._claims import ClaimLedger
-from b123d_recognisers._dispositions import Outcome, ReasonCode
-from b123d_recognisers._reconcile import reconcile_blend_candidates
-from b123d_recognisers.evidence import build_recognition_evidence
-from b123d_recognisers.result import _take_inventory
+from quiddity._adjacency import FaceGraph
+from quiddity._candidates import FamilyId
+from quiddity._claims import ClaimLedger
+from quiddity._dispositions import Outcome, ReasonCode
+from quiddity._reconcile import reconcile_blend_candidates
+from quiddity.evidence import build_recognition_evidence
+from quiddity.result import _take_inventory
 
 
 def _external(radius: float = 2.0):

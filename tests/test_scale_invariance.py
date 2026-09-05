@@ -30,12 +30,12 @@ sys.path.insert(0, str(ROOT))
 
 from build123d import Box, Pos, import_step  # noqa: E402
 
-from b123d_recognisers import (  # noqa: E402
+from quiddity import (  # noqa: E402
     recognise_risers,
     recognise_turned_steps,
     step_level_zs,
 )
-from b123d_recognisers._geometry import clears_threshold, quantise  # noqa: E402
+from quiddity._geometry import clears_threshold, quantise  # noqa: E402
 from tests.golden._common import load_fixture  # noqa: E402
 from tools._legacy_recognition import feature_census  # noqa: E402
 

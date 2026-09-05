@@ -14,17 +14,17 @@ from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.BRepFeat import BRepFeat_SplitShape
 from OCP.GeomAbs import GeomAbs_Cylinder
 
-from b123d_recognisers import _recess_features as recess_features
-from b123d_recognisers import recognise_slots
-from b123d_recognisers._adjacency import FaceEdges, FaceGraph
-from b123d_recognisers._candidates import FamilyId
-from b123d_recognisers._claims import ClaimLedger
-from b123d_recognisers._recess_features import _discover_slots, _SlotAttributionError
-from b123d_recognisers._recess_records import Slot
-from b123d_recognisers._recess_reduce import _RecessProposal
-from b123d_recognisers._registry import PHYSICAL_DEFINITIONS, FullyAttributed
-from b123d_recognisers._run import start
-from b123d_recognisers.result import _discover_all, _take_inventory
+from quiddity import _recess_features as recess_features
+from quiddity import recognise_slots
+from quiddity._adjacency import FaceEdges, FaceGraph
+from quiddity._candidates import FamilyId
+from quiddity._claims import ClaimLedger
+from quiddity._recess_features import _discover_slots, _SlotAttributionError
+from quiddity._recess_records import Slot
+from quiddity._recess_reduce import _RecessProposal
+from quiddity._registry import PHYSICAL_DEFINITIONS, FullyAttributed
+from quiddity._run import start
+from quiddity.result import _discover_all, _take_inventory
 
 ROOT = Path(__file__).parents[1]
 _AXIS = {"x": 0, "y": 1, "z": 2}
@@ -779,7 +779,7 @@ def test_late_second_body_failure_is_atomic_and_uncompleted(monkeypatch) -> None
 def test_status_registry_writer_and_private_module_seams_are_closed() -> None:
     definition = next(item for item in PHYSICAL_DEFINITIONS if item.family is FamilyId.SLOTS)
     assert isinstance(definition.attribution, FullyAttributed)
-    package = ROOT / "src/b123d_recognisers"
+    package = ROOT / "src/quiddity"
     callers = []
     importers = []
 

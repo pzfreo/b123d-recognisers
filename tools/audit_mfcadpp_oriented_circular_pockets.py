@@ -23,14 +23,14 @@ from OCP.GeomAbs import GeomAbs_Cylinder
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from b123d_recognisers._adjacency import (  # noqa: E402
+from quiddity._adjacency import (  # noqa: E402
     FaceGraph,
     FaceNode,
     frame_points_outward,
 )
-from b123d_recognisers._geometry import length_tol  # noqa: E402
-from b123d_recognisers._recess_faces import _dominant_axis  # noqa: E402
-from b123d_recognisers._recess_obround import _END_RADIUS_FRAC  # noqa: E402
+from quiddity._geometry import length_tol  # noqa: E402
+from quiddity._recess_faces import _dominant_axis  # noqa: E402
+from quiddity._recess_obround import _END_RADIUS_FRAC  # noqa: E402
 from tools.effectiveness_report import load_mfcadpp_truth  # noqa: E402
 
 _DIRECTION_TOL = 1e-6
@@ -265,7 +265,7 @@ def main() -> int:
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
 
-    from b123d_recognisers import import_step_geometry
+    from quiddity import import_step_geometry
 
     paths = sorted(args.root.glob("*.st*p"))[: args.limit]
     summary: Counter[str] = Counter()

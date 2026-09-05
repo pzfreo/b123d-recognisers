@@ -12,9 +12,9 @@ from types import SimpleNamespace
 import pytest
 from build123d import Box, Cylinder, Face, Plane, Pos, Rot
 
-from b123d_recognisers import recognise_angled_steps
-from b123d_recognisers._adjacency import FaceGraph
-from b123d_recognisers._candidates import (
+from quiddity import recognise_angled_steps
+from quiddity._adjacency import FaceGraph
+from quiddity._candidates import (
     Candidate,
     CandidateSet,
     CompletedInputs,
@@ -25,10 +25,10 @@ from b123d_recognisers._candidates import (
     PredicateId,
     SplitTriangularTerminalFact,
 )
-from b123d_recognisers._claims import ClaimLedger
-from b123d_recognisers._effective_surfaces import SurfaceUse, effective_faces_for_graph
-from b123d_recognisers._passage_compat import PassageCompatibilityView
-from b123d_recognisers._registry import PHYSICAL_DEFINITIONS
+from quiddity._claims import ClaimLedger
+from quiddity._effective_surfaces import SurfaceUse, effective_faces_for_graph
+from quiddity._passage_compat import PassageCompatibilityView
+from quiddity._registry import PHYSICAL_DEFINITIONS
 
 
 @dataclass(frozen=True)

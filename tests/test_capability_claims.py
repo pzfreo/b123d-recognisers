@@ -18,14 +18,14 @@ from build123d import (
     loft,
 )
 
-import b123d_recognisers as recognition
-from b123d_recognisers import (
+import quiddity as recognition
+from quiddity import (
     recognise_double_d_bores,
     recognise_polygonal_bosses,
     recognise_polygonal_stock,
 )
-from b123d_recognisers._record import Record
-from b123d_recognisers.profiled_bores import read_double_d_tool
+from quiddity._record import Record
+from quiddity.profiled_bores import read_double_d_tool
 
 ROOT = Path(__file__).parents[1]
 _CENTRE = (Align.CENTER, Align.CENTER, Align.CENTER)

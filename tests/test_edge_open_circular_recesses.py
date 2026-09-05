@@ -17,17 +17,17 @@ from build123d import (
     extrude,
 )
 
-from b123d_recognisers._adjacency import FaceGraph
-from b123d_recognisers._candidates import FamilyId
-from b123d_recognisers._claims import ClaimLedger
-from b123d_recognisers._dispositions import Outcome, ReasonCode
-from b123d_recognisers.edge_open_circular_recesses import (
+from quiddity._adjacency import FaceGraph
+from quiddity._candidates import FamilyId
+from quiddity._claims import ClaimLedger
+from quiddity._dispositions import Outcome, ReasonCode
+from quiddity.edge_open_circular_recesses import (
     EdgeOpenCircularPocket,
     OpenCircularSection,
     OpenCircularSectionSegment,
     recognise_edge_open_circular_pockets,
 )
-from b123d_recognisers.result import _take_inventory
+from quiddity.result import _take_inventory
 from tools._legacy_recognition import (
     build_raw_recognition_result,
 )

@@ -5,8 +5,8 @@ from pathlib import Path
 import pytest
 from build123d import import_step
 
-from b123d_recognisers._candidates import FamilyId
-from b123d_recognisers.result import _take_inventory
+from quiddity._candidates import FamilyId
+from quiddity.result import _take_inventory
 from tests.golden._common import load_fixture
 from tools.audit_section_recess_migration import audit_product
 

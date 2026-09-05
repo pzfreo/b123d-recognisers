@@ -12,9 +12,34 @@ import zipfile
 from pathlib import Path
 from shutil import copytree, ignore_patterns
 
-from b123d_recognisers import __version__
+from quiddity import __version__
 
 ROOT = Path(__file__).parents[1]
+
+
+def test_quiddity_identity_and_second_alpha_version_history() -> None:
+    from importlib.metadata import metadata
+
+    from quiddity import capability_manifest
+    from quiddity.evidence import evidence_api_manifest
+    from quiddity.inspection import inspection_api_manifest
+
+    assert metadata("quiddity")["Name"] == "quiddity"
+    capabilities = capability_manifest()
+    inspection = inspection_api_manifest()
+    evidence = evidence_api_manifest()
+    for manifest, format_name in (
+        (capabilities, "quiddity-capabilities"),
+        (inspection, "quiddity-inspection-api"),
+        (evidence, "quiddity-evidence-api"),
+    ):
+        assert manifest["format"] == format_name
+        assert manifest["package"] == {"name": "quiddity", "version": __version__}
+    # The second alpha inherits every existing family/symbol at 0.2.0. New additions may
+    # arrive later, but must not claim a pre-Quiddity introduction date.
+    versions = [family["introduced_in"] for family in capabilities["families"]]
+    versions += [symbol["introduced_in"] for symbol in inspection["api"]["symbols"]]
+    assert all(tuple(map(int, version.split("."))) >= (0, 2, 0) for version in versions)
 
 
 def test_every_copy_of_the_version_agrees() -> None:
@@ -31,18 +56,18 @@ def test_every_copy_of_the_version_agrees() -> None:
     version = declared.group(1)
 
     assert __version__ == version
-    init = (ROOT / "src" / "b123d_recognisers" / "__init__.py").read_text(encoding="utf-8")
+    init = (ROOT / "src" / "quiddity" / "__init__.py").read_text(encoding="utf-8")
     assert f'__version__ = "{version}"' in init, "the PackageNotFoundError fallback is stale"
     manifest = json.loads(
-        (ROOT / "src" / "b123d_recognisers" / "capabilities.json").read_text(encoding="utf-8")
+        (ROOT / "src" / "quiddity" / "capabilities.json").read_text(encoding="utf-8")
     )
     assert manifest["package"]["version"] == version
     inspection = json.loads(
-        (ROOT / "src" / "b123d_recognisers" / "inspection_api.json").read_text(encoding="utf-8")
+        (ROOT / "src" / "quiddity" / "inspection_api.json").read_text(encoding="utf-8")
     )
     assert inspection["package"]["version"] == version
     evidence = json.loads(
-        (ROOT / "src" / "b123d_recognisers" / "evidence_api.json").read_text(
+        (ROOT / "src" / "quiddity" / "evidence_api.json").read_text(
             encoding="utf-8"
         )
     )
@@ -86,14 +111,20 @@ def test_wheel_contains_runtime_modules_typing_marker_and_licence_files(tmp_path
 
     package_files = {
         path.relative_to(ROOT / "src").as_posix()
-        for path in (ROOT / "src" / "b123d_recognisers").glob("*")
+        for path in (ROOT / "src" / "quiddity").glob("*")
         if path.is_file() and (path.suffix in {".json", ".py"} or path.name == "py.typed")
     }
     assert package_files <= names
+    assert not any(name.startswith("b123d_recognisers/") for name in names)
+    assert wheels[0].name.startswith("quiddity-")
     entry_points = next(name for name in names if name.endswith(".dist-info/entry_points.txt"))
     with zipfile.ZipFile(wheels[0]) as archive:
         scripts = archive.read(entry_points).decode("utf-8")
-    assert "b123d-recognisers-capabilities = b123d_recognisers.capabilities:main" in scripts
+        metadata_path = next(name for name in names if name.endswith(".dist-info/METADATA"))
+        metadata = archive.read(metadata_path).decode("utf-8")
+    assert "\nName: quiddity\n" in metadata
+    assert "b123d-recognisers-capabilities =" not in scripts
+    assert "quiddity-capabilities = quiddity.capabilities:main" in scripts
     assert any(name.endswith(".dist-info/licenses/LICENSE") for name in names)
     assert any(name.endswith(".dist-info/licenses/NOTICE") for name in names)
     assert any(name.endswith(".dist-info/licenses/THIRD_PARTY_NOTICES.md") for name in names)
@@ -123,10 +154,10 @@ def test_sdist_excludes_untracked_workspace_files(tmp_path) -> None:
         names = set(archive.getnames())
 
     assert not any(name.endswith("/PRIVATE_BUILD_INPUT.txt") for name in names)
-    assert any(name.endswith("/src/b123d_recognisers/__init__.py") for name in names)
-    assert any(name.endswith("/src/b123d_recognisers/capabilities.json") for name in names)
-    assert any(name.endswith("/src/b123d_recognisers/inspection_api.json") for name in names)
-    assert any(name.endswith("/src/b123d_recognisers/evidence_api.json") for name in names)
+    assert any(name.endswith("/src/quiddity/__init__.py") for name in names)
+    assert any(name.endswith("/src/quiddity/capabilities.json") for name in names)
+    assert any(name.endswith("/src/quiddity/inspection_api.json") for name in names)
+    assert any(name.endswith("/src/quiddity/evidence_api.json") for name in names)
     assert any(name.endswith("/RELEASE_NOTES.md") for name in names)
     # The vendored STEP corpora are excluded: 9 MB of third-party geometry the tests read and
     # no consumer of the sdist needs. Deleting that exclusion would otherwise pass silently
@@ -149,7 +180,7 @@ def test_sdist_excludes_untracked_workspace_files(tmp_path) -> None:
     for line in attrs.splitlines():
         assert line.endswith(": text: unset"), f"line endings are not pinned: {line}"
     manifest = json.loads(
-        (checkout / "src" / "b123d_recognisers" / "capabilities.json").read_text(encoding="utf-8")
+        (checkout / "src" / "quiddity" / "capabilities.json").read_text(encoding="utf-8")
     )
     references = {
         reference.split("#", 1)[0]
@@ -182,15 +213,15 @@ def test_installed_wheel_imports_without_the_repository_on_sys_path(tmp_path) ->
     )
     # Text mode normalises a checkout's platform newline convention. The public exporter is
     # deliberately canonical JSON with LF newlines on every platform.
-    source_manifest = (ROOT / "src" / "b123d_recognisers" / "capabilities.json").read_text(
+    source_manifest = (ROOT / "src" / "quiddity" / "capabilities.json").read_text(
         encoding="utf-8"
     )
     manifest_digest = hashlib.sha256(source_manifest.encode()).hexdigest()
-    inspection_manifest = (ROOT / "src" / "b123d_recognisers" / "inspection_api.json").read_text(
+    inspection_manifest = (ROOT / "src" / "quiddity" / "inspection_api.json").read_text(
         encoding="utf-8"
     )
     inspection_digest = hashlib.sha256(inspection_manifest.encode()).hexdigest()
-    evidence_manifest = (ROOT / "src" / "b123d_recognisers" / "evidence_api.json").read_text(
+    evidence_manifest = (ROOT / "src" / "quiddity" / "evidence_api.json").read_text(
         encoding="utf-8"
     )
     evidence_digest = hashlib.sha256(evidence_manifest.encode()).hexdigest()
@@ -202,10 +233,10 @@ def test_installed_wheel_imports_without_the_repository_on_sys_path(tmp_path) ->
             (
                 "import sys; "
                 f"sys.path.insert(0, {str(target)!r}); "
-                "import b123d_recognisers as r; "
-                "import b123d_recognisers.experimental_geometry as e; "
-                "import b123d_recognisers.evidence as v; "
-                "import b123d_recognisers.inspection as i; "
+                "import quiddity as r; "
+                "import quiddity.experimental_geometry as e; "
+                "import quiddity.evidence as v; "
+                "import quiddity.inspection as i; "
                 "from build123d import Box, Compound, Pos, RegularPolygon, Rot, extrude; "
                 "import hashlib; "
                 "assert r.__version__; assert r.recognise_holes; "

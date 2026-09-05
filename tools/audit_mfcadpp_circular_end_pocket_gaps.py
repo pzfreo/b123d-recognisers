@@ -16,12 +16,12 @@ from typing import Any
 ROOT = Path(__file__).parents[1]
 sys.path.insert(0, str(ROOT))
 
-from b123d_recognisers._adjacency import FaceGraph, FaceNode  # noqa: E402
-from b123d_recognisers._candidates import FamilyId  # noqa: E402
-from b123d_recognisers._dispositions import Outcome  # noqa: E402
-from b123d_recognisers._geometry import length_tol  # noqa: E402
-from b123d_recognisers._recess_core import _pocket_proposals_one  # noqa: E402
-from b123d_recognisers._recess_faces import (  # noqa: E402
+from quiddity._adjacency import FaceGraph, FaceNode  # noqa: E402
+from quiddity._candidates import FamilyId  # noqa: E402
+from quiddity._dispositions import Outcome  # noqa: E402
+from quiddity._geometry import length_tol  # noqa: E402
+from quiddity._recess_core import _pocket_proposals_one  # noqa: E402
+from quiddity._recess_faces import (  # noqa: E402
     _AXES,
     _MERGE_TOL,
     _cylinder_faces,
@@ -29,14 +29,14 @@ from b123d_recognisers._recess_faces import (  # noqa: E402
     _has_side_walls,
     _planar_faces,
 )
-from b123d_recognisers._recess_obround import (  # noqa: E402
+from quiddity._recess_obround import (  # noqa: E402
     _END_RADIUS_FRAC,
     _OBROUND_RATIO_TOL,
     _obround_end,
     _obround_ends,
 )
-from b123d_recognisers._recess_records import Slot  # noqa: E402
-from b123d_recognisers.result import _take_inventory  # noqa: E402
+from quiddity._recess_records import Slot  # noqa: E402
+from quiddity.result import _take_inventory  # noqa: E402
 from tools.derive_mfcadpp_components import _components  # noqa: E402
 from tools.effectiveness_report import load_mfcadpp_truth  # noqa: E402
 from tools.run_effectiveness_baseline import _KNOWN_MFCADPP_2500_INVALID  # noqa: E402
@@ -250,7 +250,7 @@ def main() -> int:
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
 
-    from b123d_recognisers import import_step_geometry as import_step
+    from quiddity import import_step_geometry as import_step
 
     paths = sorted(args.root.glob("*.st*p"))[: args.limit]
     if not paths:
@@ -363,9 +363,9 @@ def main() -> int:
         "production_sources": {
             path: _sha256(ROOT / path)
             for path in (
-                "src/b123d_recognisers/_recess_core.py",
-                "src/b123d_recognisers/_recess_faces.py",
-                "src/b123d_recognisers/_recess_obround.py",
+                "src/quiddity/_recess_core.py",
+                "src/quiddity/_recess_faces.py",
+                "src/quiddity/_recess_obround.py",
             )
         },
         "dataset": {"name": "mfcadpp", "version": _PUBLISHED_VERSION},

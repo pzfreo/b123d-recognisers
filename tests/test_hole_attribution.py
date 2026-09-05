@@ -35,17 +35,17 @@ from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.BRepBuilderAPI import BRepBuilderAPI_NurbsConvert
 from OCP.GeomAbs import GeomAbs_Cone, GeomAbs_Cylinder, GeomAbs_Plane
 
-from b123d_recognisers import recognise_holes
-from b123d_recognisers._adjacency import (
+from quiddity import recognise_holes
+from quiddity._adjacency import (
     FaceGraph,
     FaceNode,
     SolidRef,
     edge_face_map,
     frame_points_outward,
 )
-from b123d_recognisers._candidates import FamilyId
-from b123d_recognisers._claims import ClaimLedger
-from b123d_recognisers._cylinder_substrate import (
+from quiddity._candidates import FamilyId
+from quiddity._claims import ClaimLedger
+from quiddity._cylinder_substrate import (
     _STACK_GAP_FRAC,
     _cyl_group_key,
     _line_key,
@@ -53,9 +53,9 @@ from b123d_recognisers._cylinder_substrate import (
     analyse_cylinders,
     full_cylinders,
 )
-from b123d_recognisers._effective_surfaces import SurfaceKind, SurfaceProvenance
-from b123d_recognisers._geometry import length_tol, quantise
-from b123d_recognisers._hole_features import (
+from quiddity._effective_surfaces import SurfaceKind, SurfaceProvenance
+from quiddity._geometry import length_tol, quantise
+from quiddity._hole_features import (
     CounterBore,
     HoleRecord,
     SegmentEvidence,
@@ -68,14 +68,14 @@ from b123d_recognisers._hole_features import (
     _same_diameter,
     _segments,
 )
-from b123d_recognisers._registry import PHYSICAL_DEFINITIONS
-from b123d_recognisers.countersinks import (
+from quiddity._registry import PHYSICAL_DEFINITIONS
+from quiddity.countersinks import (
     CounterSink,
     _discover_countersinks,
     countersink_matches_hole,
     recognise_countersinks,
 )
-from b123d_recognisers.result import _take_inventory
+from quiddity.result import _take_inventory
 
 ROOT = Path(__file__).parents[1]
 
@@ -109,7 +109,7 @@ def test_nonprincipal_converted_hole_keeps_standalone_and_aggregate_parity() -> 
 
 
 def test_recovered_hole_end_plane_refusal_cannot_claim_through(monkeypatch) -> None:
-    import b123d_recognisers._effective_surfaces as surfaces
+    import quiddity._effective_surfaces as surfaces
 
     native = Box(12, 12, 10) - Cylinder(2, 10)
     converted = Part(BRepBuilderAPI_NurbsConvert(native.wrapped, True).Shape())
@@ -741,7 +741,7 @@ def test_cylinder_quantisation_line_projection_and_gap_boundaries() -> None:
 
 
 def test_opening_tie_break_and_monotonic_step_rejection(monkeypatch) -> None:
-    import b123d_recognisers._hole_features as module
+    import quiddity._hole_features as module
 
     lo = _segment(10, 0, 4)
     hi = _segment(10, 4, 10)
@@ -1050,7 +1050,7 @@ def test_ambiguous_or_empty_countersink_predecessor_refuses_atomically() -> None
 
 
 def test_cross_solid_or_reused_countersink_predecessor_refuses_prefix_free(monkeypatch) -> None:
-    import b123d_recognisers._hole_features as module
+    import quiddity._hole_features as module
 
     left, right = Pos(-50, 0, 0) * _countersunk(), Pos(50, 0, 0) * _countersunk()
     part = Compound([left, right])
@@ -1083,7 +1083,7 @@ def test_cross_solid_or_reused_countersink_predecessor_refuses_prefix_free(monke
 
 
 def test_duplicate_hole_face_ownership_refuses_without_prefix(monkeypatch) -> None:
-    import b123d_recognisers._hole_features as module
+    import quiddity._hole_features as module
 
     part = _through()
     ledger = ClaimLedger(FaceGraph(part))
@@ -1171,7 +1171,7 @@ def test_scale_traversal_step_and_supplied_dependencies_preserve_roles(
 
     supplied_part = _spotface_stack()
     cylinders = analyse_cylinders(supplied_part)
-    from b123d_recognisers._adjacency import FaceEdges
+    from quiddity._adjacency import FaceEdges
 
     _claimed(supplied_part, cyls=cylinders, face_edges=FaceEdges())
 
@@ -1241,7 +1241,7 @@ def test_rounded_slot_and_unrelated_wider_groove_issue_no_surplus_roles() -> Non
 
 @pytest.mark.parametrize("stale", [False, True])
 def test_deep_or_translated_cylindrical_snapshot_refuses_atomically(monkeypatch, stale) -> None:
-    import b123d_recognisers._hole_features as module
+    import quiddity._hole_features as module
 
     part = _through()
     ledger = ClaimLedger(FaceGraph(part))
@@ -1261,7 +1261,7 @@ def test_deep_or_translated_cylindrical_snapshot_refuses_atomically(monkeypatch,
 
 
 def test_missing_or_aliased_hole_source_roles_refuse_atomically(monkeypatch) -> None:
-    import b123d_recognisers._hole_features as module
+    import quiddity._hole_features as module
 
     part = _blind()
     ledger = ClaimLedger(FaceGraph(part))
@@ -1378,7 +1378,7 @@ def _qualified_calls(tree: ast.AST) -> list[tuple[str, ast.Call]]:
 
 def test_private_hole_core_has_one_writer_caller_and_declared_predecessor() -> None:
     sites: list[tuple[str, ast.Call]] = []
-    for path in (ROOT / "src/b123d_recognisers").glob("*.py"):
+    for path in (ROOT / "src/quiddity").glob("*.py"):
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
         sites.extend(
             (path.name, call)
@@ -1399,7 +1399,7 @@ def test_private_hole_core_has_one_writer_caller_and_declared_predecessor() -> N
     assert isinstance(predecessor, ast.Name) and predecessor.id == "occurrences"
 
     source = ast.parse(
-        (ROOT / "src/b123d_recognisers/_hole_features.py").read_text(encoding="utf-8")
+        (ROOT / "src/quiddity/_hole_features.py").read_text(encoding="utf-8")
     )
     functions = {node.name: node for node in source.body if isinstance(node, ast.FunctionDef)}
     public_calls = [
@@ -1415,7 +1415,7 @@ def test_private_hole_core_has_one_writer_caller_and_declared_predecessor() -> N
     }
 
     registry_tree = ast.parse(
-        (ROOT / "src/b123d_recognisers/_registry.py").read_text(encoding="utf-8")
+        (ROOT / "src/quiddity/_registry.py").read_text(encoding="utf-8")
     )
     registry_functions = {
         node.name: node for node in registry_tree.body if isinstance(node, ast.FunctionDef)
@@ -1449,7 +1449,7 @@ def test_private_hole_core_has_one_writer_caller_and_declared_predecessor() -> N
 
 def test_hole_record_and_step_constructor_roster_is_closed() -> None:
     sites: list[tuple[str, str]] = []
-    for path in (ROOT / "src/b123d_recognisers").glob("*.py"):
+    for path in (ROOT / "src/quiddity").glob("*.py"):
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
         for qualified, _call in _qualified_calls(tree):
             if qualified.endswith(".HoleRecord") or qualified == "HoleRecord":
@@ -1461,7 +1461,7 @@ def test_hole_record_and_step_constructor_roster_is_closed() -> None:
         ("_hole_features.py", "HoleRecord"),
     ]
 
-    from b123d_recognisers._effective_surfaces import SURFACE_READER_SITES
+    from quiddity._effective_surfaces import SURFACE_READER_SITES
 
     assert "_hole_features:_classify_end_uncached:adaptor:1" in SURFACE_READER_SITES
     assert "_hole_features:_classify_end_uncached:adaptor:2" in SURFACE_READER_SITES

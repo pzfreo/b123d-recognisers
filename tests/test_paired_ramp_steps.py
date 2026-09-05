@@ -25,19 +25,19 @@ from build123d import (
 )
 from OCP.BRepFeat import BRepFeat_SplitShape
 
-from b123d_recognisers import (
+from quiddity import (
     PairedRampStep,
     build_recognition_result,
     feature_census,
     recognise_paired_ramp_steps,
 )
-from b123d_recognisers import paired_ramp_steps as paired_ramp_module
-from b123d_recognisers._adjacency import FaceGraph
-from b123d_recognisers._bevel import BevelReject, classify_bevel
-from b123d_recognisers._candidates import FamilyId
-from b123d_recognisers._claims import ClaimLedger
-from b123d_recognisers._dispositions import Outcome
-from b123d_recognisers.result import _take_inventory
+from quiddity import paired_ramp_steps as paired_ramp_module
+from quiddity._adjacency import FaceGraph
+from quiddity._bevel import BevelReject, classify_bevel
+from quiddity._candidates import FamilyId
+from quiddity._claims import ClaimLedger
+from quiddity._dispositions import Outcome
+from quiddity.result import _take_inventory
 from tests.golden.triangular_and_hex_pockets.fixture import build_fixture as pocket_fixture
 
 

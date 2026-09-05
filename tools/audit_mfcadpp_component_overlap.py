@@ -21,10 +21,10 @@ from typing import Any
 ROOT = Path(__file__).parents[1]
 sys.path.insert(0, str(ROOT))
 
-from b123d_recognisers._adjacency import axis_aligned_axis  # noqa: E402
-from b123d_recognisers._candidates import FamilyId  # noqa: E402
-from b123d_recognisers._dispositions import Outcome  # noqa: E402
-from b123d_recognisers.result import _take_inventory  # noqa: E402
+from quiddity._adjacency import axis_aligned_axis  # noqa: E402
+from quiddity._candidates import FamilyId  # noqa: E402
+from quiddity._dispositions import Outcome  # noqa: E402
+from quiddity.result import _take_inventory  # noqa: E402
 from tools.derive_mfcadpp_components import _components  # noqa: E402
 from tools.effectiveness_report import load_mfcadpp_truth  # noqa: E402
 
@@ -122,7 +122,7 @@ def main() -> int:
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
 
-    from b123d_recognisers import import_step_geometry as import_step
+    from quiddity import import_step_geometry as import_step
 
     paths = sorted(args.root.glob("*.st*p"))[: args.limit]
     if not paths:

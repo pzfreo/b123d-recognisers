@@ -1,18 +1,18 @@
 """Private tooling imports for frozen detector-baseline measurements, not consumer API."""
 
-from b123d_recognisers.edge_open_circular_recesses import (
+from quiddity.edge_open_circular_recesses import (
     EdgeOpenCircularPocket,
     OpenCircularSection,
     OpenCircularSectionSegment,
     recognise_edge_open_circular_pockets,
 )
-from b123d_recognisers.edge_open_prismatic_recesses import (
+from quiddity.edge_open_prismatic_recesses import (
     EdgeOpenPrismaticRecess,
     OpenPolygonalSection,
     OpenSectionOpening,
     recognise_edge_open_prismatic_recesses,
 )
-from b123d_recognisers.passages import (
+from quiddity.passages import (
     Passage,
     PassageCompatibilityError,
     PassageEnds,
@@ -20,19 +20,19 @@ from b123d_recognisers.passages import (
     recognise_passages,
     recognise_section_passages,
 )
-from b123d_recognisers.prismatic_pockets import (
+from quiddity.prismatic_pockets import (
     PrismaticPocket,
     recognise_prismatic_pockets,
 )
-from b123d_recognisers.rectangular_blind_slots import (
+from quiddity.rectangular_blind_slots import (
     RectangularBlindSlot,
     recognise_rectangular_blind_slots,
 )
-from b123d_recognisers.round_bottom_slots import (
+from quiddity.round_bottom_slots import (
     RoundBottomBlindSlot,
     recognise_round_bottom_blind_slots,
 )
-from b123d_recognisers.slots import (
+from quiddity.slots import (
     Channel,
     Pocket,
     PocketArray,
@@ -74,7 +74,7 @@ __all__ = [
 
 
 def build_raw_recognition_result(part, *, cylinders=None, rotational=False):
-    from b123d_recognisers.result import _take_inventory
+    from quiddity.result import _take_inventory
 
     return _take_inventory(part, cylinders=cylinders, rotational=rotational)._legacy_result
 
@@ -93,8 +93,8 @@ def detector_outputs_equal(left, right, *, excluding=()):
 
 
 def feature_census(part):
-    from b123d_recognisers.census import _LEGACY_CENSUS_BINDINGS
-    from b123d_recognisers.result import _take_inventory
+    from quiddity.census import _LEGACY_CENSUS_BINDINGS
+    from quiddity.result import _take_inventory
 
     product = _take_inventory(part)
     return {
@@ -109,7 +109,7 @@ def namespace():
     """Frozen detector-view adapter used only by the historic golden snapshot tools."""
     from types import SimpleNamespace
 
-    import b123d_recognisers as public
+    import quiddity as public
 
     values = {name: getattr(public, name) for name in public.__all__}
     values.update({name: globals()[name] for name in __all__})

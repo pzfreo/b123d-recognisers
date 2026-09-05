@@ -29,14 +29,14 @@ from OCP.BRepClass3d import BRepClass3d_SolidClassifier
 from OCP.gp import gp_Pnt
 from OCP.TopAbs import TopAbs_IN
 
-from b123d_recognisers import (
+from quiddity import (
     recognise_slots,
 )
-from b123d_recognisers._adjacency import FaceEdges, FaceGraph
-from b123d_recognisers._candidates import FamilyId
-from b123d_recognisers._claims import ClaimLedger
-from b123d_recognisers._reconcile import reconcile_recess_candidates
-from b123d_recognisers._rings import _canonical, _centroid, _interior_point
+from quiddity._adjacency import FaceEdges, FaceGraph
+from quiddity._candidates import FamilyId
+from quiddity._claims import ClaimLedger
+from quiddity._reconcile import reconcile_recess_candidates
+from quiddity._rings import _canonical, _centroid, _interior_point
 from tools._legacy_recognition import (
     build_recognition_result,
     recognise_passages,
@@ -349,7 +349,7 @@ def test_a_passage_records_the_ring_it_was_built_from():
 
 
 def test_aggregate_discovers_passages_once_before_reconciliation(monkeypatch) -> None:
-    import b123d_recognisers._registry as registry_module
+    import quiddity._registry as registry_module
 
     original = registry_module.recognise_section_passages
     calls = 0

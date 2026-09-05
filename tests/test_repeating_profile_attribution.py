@@ -25,16 +25,16 @@ from build123d import (
     import_step,
 )
 
-import b123d_recognisers.repeating_profiles as module
-from b123d_recognisers import recognise_repeating_radial_profiles
-from b123d_recognisers._adjacency import FaceGraph
-from b123d_recognisers._candidates import FamilyId
-from b123d_recognisers._claims import ClaimLedger
-from b123d_recognisers._effective_surfaces import SURFACE_READER_SITES
-from b123d_recognisers._geometry import part_scale
-from b123d_recognisers._registry import PHYSICAL_DEFINITIONS, FullyAttributed, NotCounted
-from b123d_recognisers._run import start
-from b123d_recognisers.result import _discover_all, _take_inventory
+import quiddity.repeating_profiles as module
+from quiddity import recognise_repeating_radial_profiles
+from quiddity._adjacency import FaceGraph
+from quiddity._candidates import FamilyId
+from quiddity._claims import ClaimLedger
+from quiddity._effective_surfaces import SURFACE_READER_SITES
+from quiddity._geometry import part_scale
+from quiddity._registry import PHYSICAL_DEFINITIONS, FullyAttributed, NotCounted
+from quiddity._run import start
+from quiddity.result import _discover_all, _take_inventory
 from tests.golden._common import toothed_prism
 
 ROOT = Path(__file__).parents[1]
@@ -666,7 +666,7 @@ def test_registry_status_and_not_counted_disposition_are_exact() -> None:
 
 
 def test_private_core_and_constructor_rosters_are_closed() -> None:
-    package = ROOT / "src/b123d_recognisers"
+    package = ROOT / "src/quiddity"
     sites = []
     constructors = []
     proposal_constructors = []
@@ -676,7 +676,7 @@ def test_private_core_and_constructor_rosters_are_closed() -> None:
         module_aliases = set()
         for statement in tree.body:
             if isinstance(statement, ast.ImportFrom) and statement.module in {
-                "b123d_recognisers.repeating_profiles",
+                "quiddity.repeating_profiles",
                 "repeating_profiles",
             }:
                 aliases.update(
@@ -684,7 +684,7 @@ def test_private_core_and_constructor_rosters_are_closed() -> None:
                     for alias in statement.names
                     if alias.name == "_discover_repeating_radial_profiles"
                 )
-            if isinstance(statement, ast.ImportFrom) and statement.module == "b123d_recognisers":
+            if isinstance(statement, ast.ImportFrom) and statement.module == "quiddity":
                 module_aliases.update(
                     alias.asname or alias.name
                     for alias in statement.names
@@ -694,7 +694,7 @@ def test_private_core_and_constructor_rosters_are_closed() -> None:
                 module_aliases.update(
                     alias.asname or alias.name
                     for alias in statement.names
-                    if alias.name == "b123d_recognisers.repeating_profiles"
+                    if alias.name == "quiddity.repeating_profiles"
                 )
         if path.name == "repeating_profiles.py":
             aliases.add("_discover_repeating_radial_profiles")
@@ -749,13 +749,13 @@ def test_private_core_and_constructor_rosters_are_closed() -> None:
         "dataclasses",
         "math",
         "build123d",
-        "b123d_recognisers._adjacency",
-        "b123d_recognisers._candidates",
-        "b123d_recognisers._claims",
-        "b123d_recognisers._geometry",
-        "b123d_recognisers._record",
-        "b123d_recognisers._typing",
-        "b123d_recognisers.profiled_bores",
+        "quiddity._adjacency",
+        "quiddity._candidates",
+        "quiddity._claims",
+        "quiddity._geometry",
+        "quiddity._record",
+        "quiddity._typing",
+        "quiddity.profiled_bores",
     }
     source = (package / "repeating_profiles.py").read_text(encoding="utf-8")
     source_tree = ast.parse(source)

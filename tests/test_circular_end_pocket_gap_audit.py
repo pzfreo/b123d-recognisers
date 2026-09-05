@@ -6,9 +6,9 @@ from __future__ import annotations
 
 from build123d import Box, Compound, Cylinder, Plane, Polygon, Pos, Rot, chamfer, extrude, fillet
 
-from b123d_recognisers._adjacency import FaceGraph
-from b123d_recognisers._recess_core import _pocket_proposals_one
-from b123d_recognisers._recess_faces import _cylinder_faces
+from quiddity._adjacency import FaceGraph
+from quiddity._recess_core import _pocket_proposals_one
+from quiddity._recess_faces import _cylinder_faces
 from tools._legacy_recognition import (
     recognise_pockets,
 )

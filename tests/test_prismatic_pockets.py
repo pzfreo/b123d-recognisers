@@ -38,16 +38,16 @@ from build123d import (
     mirror,
 )
 
-from b123d_recognisers._adjacency import FaceGraph
-from b123d_recognisers._candidates import FamilyId
-from b123d_recognisers._claims import ClaimLedger
-from b123d_recognisers._reconcile import prismatic_pockets_that_are_not_pockets
-from b123d_recognisers._rings import rings
-from b123d_recognisers.frames import (
+from quiddity._adjacency import FaceGraph
+from quiddity._candidates import FamilyId
+from quiddity._claims import ClaimLedger
+from quiddity._reconcile import prismatic_pockets_that_are_not_pockets
+from quiddity._rings import rings
+from quiddity.frames import (
     FramedRecognitionResult,
     build_framed_recognition_result,
 )
-from b123d_recognisers.prismatic_pockets import (
+from quiddity.prismatic_pockets import (
     SPAN_EPS,
     _axis_for_opening,
     _floor_seeded_regions,

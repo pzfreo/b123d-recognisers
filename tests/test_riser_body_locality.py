@@ -7,7 +7,7 @@ from copy import deepcopy
 import pytest
 from build123d import Align, Axis, Box, Compound, Pos, export_step, import_step
 
-from b123d_recognisers import (
+from quiddity import (
     FaceLevel,
     FramedRecognitionResult,
     RiserEvidence,
@@ -18,8 +18,8 @@ from b123d_recognisers import (
     recognise_risers,
     step_level_records,
 )
-from b123d_recognisers._candidates import FamilyId
-from b123d_recognisers.result import _take_inventory
+from quiddity._candidates import FamilyId
+from quiddity.result import _take_inventory
 
 _MINIMUM_Z = (Align.CENTER, Align.CENTER, Align.MIN)
 

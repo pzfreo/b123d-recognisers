@@ -14,9 +14,9 @@ import time
 
 from build123d import Align, Box, Compound, Polygon, Pos, Rot, extrude
 
-from b123d_recognisers._correspondence import correspondence_snapshot
-from b123d_recognisers._correspondence_match import correspondence_changes
-from b123d_recognisers.result import _take_inventory
+from quiddity._correspondence import correspondence_snapshot
+from quiddity._correspondence_match import correspondence_changes
+from quiddity.result import _take_inventory
 
 SAMPLES = 5
 MEDIAN_RATIO_CEILING = 0.25

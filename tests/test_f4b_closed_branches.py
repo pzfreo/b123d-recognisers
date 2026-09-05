@@ -6,9 +6,9 @@ from types import SimpleNamespace
 import pytest
 from build123d import Box, Pos, Rot
 
-from b123d_recognisers._adjacency import FaceGraph, SolidRef
-from b123d_recognisers._claims import ClaimLedger
-from b123d_recognisers._passage_compat import (
+from quiddity._adjacency import FaceGraph, SolidRef
+from quiddity._claims import ClaimLedger
+from quiddity._passage_compat import (
     PassageCompatibilityView,
     _canonical_section,
     compatibility_view,
@@ -16,7 +16,7 @@ from b123d_recognisers._passage_compat import (
     passage_from_view,
     principal_projection,
 )
-from b123d_recognisers._section_passages import (
+from quiddity._section_passages import (
     _BodyAdapter,
     _canonical_run,
     _end_slab,
@@ -26,8 +26,8 @@ from b123d_recognisers._section_passages import (
     _pair_line,
     _void_and_open,
 )
-from b123d_recognisers._sections import LocalFrame
-from b123d_recognisers.passages import (
+from quiddity._sections import LocalFrame
+from quiddity.passages import (
     Passage,
     PassageEnds,
     PassageFrame,
@@ -187,7 +187,7 @@ def test_body_adapter_revalidates_the_occurrence_mapping() -> None:
 
 
 def test_cycle_proposal_properties_and_incomplete_wall_spans_refuse(monkeypatch) -> None:
-    import b123d_recognisers._section_passages as module
+    import quiddity._section_passages as module
     from tests.test_section_passages import _square
 
     part = _square()
@@ -201,7 +201,7 @@ def test_cycle_proposal_properties_and_incomplete_wall_spans_refuse(monkeypatch)
 
 
 def test_cycle_proposal_refuses_disagreeing_complete_wall_spans(monkeypatch) -> None:
-    import b123d_recognisers._section_passages as module
+    import quiddity._section_passages as module
     from tests.test_section_passages import _square
 
     part = _square()
@@ -349,8 +349,8 @@ def test_private_projection_and_unit_refusal_branches() -> None:
 
 
 def test_legacy_compatibility_mismatch_refuses_before_publication(monkeypatch) -> None:
-    import b123d_recognisers.passages as module
-    from b123d_recognisers._adjacency import FaceGraph
+    import quiddity.passages as module
+    from quiddity._adjacency import FaceGraph
     from tests.test_section_passages import _square
 
     part = _square()
@@ -386,9 +386,9 @@ def test_legacy_compatibility_accepts_only_equivalent_section_traversal() -> Non
 
 
 def test_equal_rich_records_on_distinct_wall_sets_refuse(monkeypatch) -> None:
-    import b123d_recognisers.passages as module
-    from b123d_recognisers._adjacency import FaceGraph
-    from b123d_recognisers._section_passages import section_ring_proposals
+    import quiddity.passages as module
+    from quiddity._adjacency import FaceGraph
+    from quiddity._section_passages import section_ring_proposals
 
     part = Box(80, 40, 20)
     part = part - Pos(-20, 0, 0) * Box(8, 8, 60) - Pos(20, 0, 0) * Box(12, 6, 60)
@@ -402,8 +402,8 @@ def test_equal_rich_records_on_distinct_wall_sets_refuse(monkeypatch) -> None:
 
 
 def test_proposal_projection_refuses_arc_boundary(monkeypatch) -> None:
-    from b123d_recognisers._adjacency import FaceGraph
-    from b123d_recognisers._section_passages import section_ring_proposals
+    from quiddity._adjacency import FaceGraph
+    from quiddity._section_passages import section_ring_proposals
     from tests.test_section_passages import _square
 
     part = _square()

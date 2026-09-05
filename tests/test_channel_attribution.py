@@ -24,20 +24,20 @@ from build123d import (
 from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.GeomAbs import GeomAbs_Plane
 
-import b123d_recognisers._recess_core as core_module
-import b123d_recognisers._recess_features as feature_module
-from b123d_recognisers._adjacency import FaceEdges, FaceGraph, FaceNode
-from b123d_recognisers._candidates import FamilyId
-from b123d_recognisers._claims import ClaimLedger
-from b123d_recognisers._geometry import COORD_FLOOR
-from b123d_recognisers._recess_core import (
+import quiddity._recess_core as core_module
+import quiddity._recess_features as feature_module
+from quiddity._adjacency import FaceEdges, FaceGraph, FaceNode
+from quiddity._candidates import FamilyId
+from quiddity._claims import ClaimLedger
+from quiddity._geometry import COORD_FLOOR
+from quiddity._recess_core import (
     _bounds_one_void as production_bounds_one_void,
 )
-from b123d_recognisers._recess_core import (
+from quiddity._recess_core import (
     _recognise_channels_one,
     _uninterrupted_long_span,
 )
-from b123d_recognisers._recess_faces import (
+from quiddity._recess_faces import (
     _AXIS_ALIGNED_TOL,
     _FLOOR_COVER_FRAC,
     _FLOOR_TOL,
@@ -47,9 +47,9 @@ from b123d_recognisers._recess_faces import (
     _Face,
     _is_wall,
 )
-from b123d_recognisers._recess_features import _discover_channels
-from b123d_recognisers._recess_records import Channel
-from b123d_recognisers.result import _take_inventory
+from quiddity._recess_features import _discover_channels
+from quiddity._recess_records import Channel
+from quiddity.result import _take_inventory
 from tests.golden.open_channels.fixture import build_fixture
 from tools._legacy_recognition import (
     recognise_channels,
@@ -869,7 +869,7 @@ def _qualified_calls(tree: ast.AST):
 
 def test_channel_private_core_and_registry_writer_route_are_closed() -> None:
     sites: list[tuple[str, ast.Call]] = []
-    for path in (ROOT / "src/b123d_recognisers").glob("*.py"):
+    for path in (ROOT / "src/quiddity").glob("*.py"):
         tree = ast.parse(path.read_text(encoding="utf-8"))
         sites.extend(
             (path.name, call)
@@ -887,7 +887,7 @@ def test_channel_private_core_and_registry_writer_route_are_closed() -> None:
     )
 
     feature_tree = ast.parse(
-        (ROOT / "src/b123d_recognisers/_recess_features.py").read_text(encoding="utf-8")
+        (ROOT / "src/quiddity/_recess_features.py").read_text(encoding="utf-8")
     )
     public = next(
         node
@@ -919,7 +919,7 @@ def test_channel_private_core_and_registry_writer_route_are_closed() -> None:
     )
 
     constructors: list[tuple[str, str]] = []
-    for path in (ROOT / "src/b123d_recognisers").glob("*.py"):
+    for path in (ROOT / "src/quiddity").glob("*.py"):
         tree = ast.parse(path.read_text(encoding="utf-8"))
         constructors.extend(
             (path.name, name)
@@ -930,7 +930,7 @@ def test_channel_private_core_and_registry_writer_route_are_closed() -> None:
     assert constructors[0][0] == "_recess_core.py"
     assert constructors[0][1].endswith(".Channel") or constructors[0][1] == "Channel"
 
-    core = ast.parse((ROOT / "src/b123d_recognisers/_recess_core.py").read_text(encoding="utf-8"))
+    core = ast.parse((ROOT / "src/quiddity/_recess_core.py").read_text(encoding="utf-8"))
     proposal = next(
         node
         for node in core.body
@@ -968,7 +968,7 @@ def test_channel_private_core_and_registry_writer_route_are_closed() -> None:
     referenced = {node.id for node in ast.walk(discover) if isinstance(node, ast.Name)}
     assert referenced.isdisjoint(forbidden)
 
-    from b123d_recognisers._effective_surfaces import SURFACE_READER_SITES
+    from quiddity._effective_surfaces import SURFACE_READER_SITES
 
     assert not any("_discover_channels" in site for site in SURFACE_READER_SITES)
     assert "_recess_faces:_planar_faces:is_planar:1" in SURFACE_READER_SITES

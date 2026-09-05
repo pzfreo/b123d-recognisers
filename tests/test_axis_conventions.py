@@ -20,7 +20,7 @@ import math
 
 import pytest
 
-from b123d_recognisers._geometry import (
+from quiddity._geometry import (
     _axis_direction_is_aligned,
     _axis_letter_of,
     _canonical_axis_direction,

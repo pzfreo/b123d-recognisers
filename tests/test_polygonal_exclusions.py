@@ -22,7 +22,7 @@ import math
 import pytest
 from build123d import Box, Cylinder, Polygon, Pos, RegularPolygon, Rot, extrude
 
-from b123d_recognisers import recognise_polygonal_bosses, recognise_polygonal_stock
+from quiddity import recognise_polygonal_bosses, recognise_polygonal_stock
 
 _BASE = Box(100, 80, 10)
 

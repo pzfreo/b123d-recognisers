@@ -20,16 +20,16 @@ from typing import Any, cast
 
 from build123d import Vector, extrude
 
-from b123d_recognisers import import_step_geometry as import_step
+from quiddity import import_step_geometry as import_step
 
 ROOT = Path(__file__).parents[1]
 sys.path.insert(0, str(ROOT))
 
-from b123d_recognisers._adjacency import FaceGraph, FaceNode, axis_aligned_axis  # noqa: E402
-from b123d_recognisers._dispositions import Outcome  # noqa: E402
-from b123d_recognisers._geometry import COORD_FLOOR  # noqa: E402
-from b123d_recognisers._typing import CylinderEvidence  # noqa: E402
-from b123d_recognisers.result import _take_inventory  # noqa: E402
+from quiddity._adjacency import FaceGraph, FaceNode, axis_aligned_axis  # noqa: E402
+from quiddity._dispositions import Outcome  # noqa: E402
+from quiddity._geometry import COORD_FLOOR  # noqa: E402
+from quiddity._typing import CylinderEvidence  # noqa: E402
+from quiddity.result import _take_inventory  # noqa: E402
 from tools.derive_mfcadpp_components import _components  # noqa: E402
 from tools.effectiveness_report import load_mfcadpp_truth  # noqa: E402
 

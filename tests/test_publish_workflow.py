@@ -179,8 +179,8 @@ def test_ci_has_one_coverage_authority_and_a_separate_exhaustive_matrix() -> Non
 def test_readme_links_the_codecov_badge_to_the_public_project() -> None:
     readme = README.read_text(encoding="utf-8")
 
-    badge = "https://codecov.io/gh/pzfreo/b123d-recognisers/graph/badge.svg"
-    project = "https://codecov.io/gh/pzfreo/b123d-recognisers"
+    badge = "https://codecov.io/gh/pzfreo/quiddity/graph/badge.svg"
+    project = "https://codecov.io/gh/pzfreo/quiddity"
     assert f"[![codecov]({badge})]({project})" in readme
 
 

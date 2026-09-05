@@ -9,13 +9,13 @@ from typing import Any
 from build123d import GeomType
 from OCP.BRepAdaptor import BRepAdaptor_Surface
 
-from b123d_recognisers._adjacency import FaceGraph
-from b123d_recognisers._bevel import classify_bevel
-from b123d_recognisers._candidates import FamilyId
-from b123d_recognisers._claims import ClaimLedger
-from b123d_recognisers._cylinder_substrate import analyse_cylinders
-from b123d_recognisers._geometry import _coaxial_axis_lines
-from b123d_recognisers.countersinks import cone_rims
+from quiddity._adjacency import FaceGraph
+from quiddity._bevel import classify_bevel
+from quiddity._candidates import FamilyId
+from quiddity._claims import ClaimLedger
+from quiddity._cylinder_substrate import analyse_cylinders
+from quiddity._geometry import _coaxial_axis_lines
+from quiddity.countersinks import cone_rims
 
 
 def assert_ring_role(ledger, candidate, record) -> None:

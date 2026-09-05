@@ -27,9 +27,9 @@ from pathlib import Path
 import pytest
 from build123d import Axis, Box, Cylinder, GeomType, Pos, fillet
 
-import b123d_recognisers as r
-from b123d_recognisers import _adjacency, _cylinder_substrate
-from b123d_recognisers.census import feature_census
+import quiddity as r
+from quiddity import _adjacency, _cylinder_substrate
+from quiddity.census import feature_census
 from tests.golden._common import load_fixture
 
 GOLDEN = Path(__file__).parent / "golden"
@@ -70,7 +70,7 @@ def derivations(monkeypatch):
     # the definition site alone would leave a rescanning recogniser invisible -- which is the
     # exact thing being counted.
     for module in list(sys.modules.values()):
-        if getattr(module, "__name__", "").startswith("b123d_recognisers") and (
+        if getattr(module, "__name__", "").startswith("quiddity") and (
             getattr(module, "analyse_cylinders", None) is scan
         ):
             monkeypatch.setattr(module, "analyse_cylinders", counted_scan)
@@ -144,7 +144,7 @@ def test_a_graph_over_the_wrong_solid_is_refused_rather_than_answered():
     so the check is at the door — the same guard `_rings` applies to its own caller.
     """
 
-    from b123d_recognisers.experimental_geometry import GeometryGraph
+    from quiddity.experimental_geometry import GeometryGraph
 
     hexagon = _golden("hexagonal_passage")
     with pytest.raises(ValueError):

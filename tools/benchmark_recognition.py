@@ -58,7 +58,7 @@ CENSUS_CORPORA = ("nist", "gramel")
 
 
 def _census_parts():
-    from b123d_recognisers import import_step_geometry as import_step
+    from quiddity import import_step_geometry as import_step
 
     paths = sorted(
         path
@@ -72,8 +72,8 @@ def _census_parts():
 
 def _implementation(kind: str, baseline: Path | None):
     if kind == "package":
-        import b123d_recognisers as recognition
-        from b123d_recognisers import feature_census
+        import quiddity as recognition
+        from quiddity import feature_census
 
         return recognition, feature_census
 

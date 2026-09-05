@@ -22,7 +22,7 @@ CONSTRUCTOR_COUNTS = {
 def test_new_record_constructor_paths_require_f5b_roster_review() -> None:
     for filename, (constructor, expected) in CONSTRUCTOR_COUNTS.items():
         tree = ast.parse(
-            (ROOT / "src" / "b123d_recognisers" / filename).read_text(encoding="utf-8")
+            (ROOT / "src" / "quiddity" / filename).read_text(encoding="utf-8")
         )
         found = sum(
             isinstance(node, ast.Call)

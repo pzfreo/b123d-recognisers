@@ -25,8 +25,8 @@ import math
 
 from build123d import Axis, Box, chamfer
 
-from b123d_recognisers import recognise_chamfers
-from b123d_recognisers._geometry import AXIS_ALIGNED_COS
+from quiddity import recognise_chamfers
+from quiddity._geometry import AXIS_ALIGNED_COS
 
 #: The tilt from an axis at which a face stops counting as aligned with it: 8.11°.
 BOUNDARY = math.degrees(math.acos(AXIS_ALIGNED_COS))

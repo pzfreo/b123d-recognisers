@@ -53,10 +53,10 @@ def main() -> int:
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
 
-    from b123d_recognisers import import_step_geometry as import_step
-    from b123d_recognisers._candidates import FamilyId
-    from b123d_recognisers._dispositions import Outcome
-    from b123d_recognisers.result import _take_inventory
+    from quiddity import import_step_geometry as import_step
+    from quiddity._candidates import FamilyId
+    from quiddity._dispositions import Outcome
+    from quiddity.result import _take_inventory
 
     paths = sorted(args.root.glob("*.st*p"))[: args.limit]
     if not paths:

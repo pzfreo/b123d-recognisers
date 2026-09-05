@@ -7,10 +7,10 @@ from itertools import combinations
 import pytest
 from build123d import Box, Compound, Cylinder, Pos, Rot, Vector, Vertex, export_step, import_step
 
-from b123d_recognisers._adjacency import FaceGraph
-from b123d_recognisers._candidates import FamilyId
-from b123d_recognisers._corner_section import prove_corner_section
-from b123d_recognisers.result import _take_inventory
+from quiddity._adjacency import FaceGraph
+from quiddity._candidates import FamilyId
+from quiddity._corner_section import prove_corner_section
+from quiddity.result import _take_inventory
 
 
 def corner(scale=1):
@@ -153,7 +153,7 @@ def test_suspended_material_in_run_or_mouth_refuses_corner_projection(xy, post_z
 
 
 def test_material_probe_failure_refuses_projection_without_dropping_legacy_record(monkeypatch):
-    import b123d_recognisers._corner_section as adapter
+    import quiddity._corner_section as adapter
 
     def failure(*args):
         raise RuntimeError("authored boolean failure")

@@ -9,15 +9,15 @@ import pytest
 from attribution_audit import attributed_run, unattributed_run
 from build123d import Axis, Box, Cone, Cylinder, GeomType, Pos, Sphere, Torus, fillet, import_step
 
-from b123d_recognisers import (
+from quiddity import (
     Chamfer,
     Fillet,
     build_recognition_result,
     recognise_chamfers,
     recognise_fillets,
 )
-from b123d_recognisers._candidates import FamilyId
-from b123d_recognisers._geometry import _coaxial_axis_lines
+from quiddity._candidates import FamilyId
+from quiddity._geometry import _coaxial_axis_lines
 
 CORPUS = Path(__file__).parent / "corpus" / "gramel"
 

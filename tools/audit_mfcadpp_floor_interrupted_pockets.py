@@ -25,10 +25,10 @@ from typing import Any
 ROOT = Path(__file__).parents[1]
 sys.path.insert(0, str(ROOT))
 
-from b123d_recognisers._adjacency import FaceGraph, FaceNode  # noqa: E402
-from b123d_recognisers._geometry import AXIS_ZERO_COS  # noqa: E402
-from b123d_recognisers._rings import SPAN_EPS, _cross_section  # noqa: E402
-from b123d_recognisers.prismatic_pockets import (  # noqa: E402
+from quiddity._adjacency import FaceGraph, FaceNode  # noqa: E402
+from quiddity._geometry import AXIS_ZERO_COS  # noqa: E402
+from quiddity._rings import SPAN_EPS, _cross_section  # noqa: E402
+from quiddity.prismatic_pockets import (  # noqa: E402
     _END_PROBE,
     _MATERIAL_VOL_FRAC,
     _axis_for_opening,
@@ -39,7 +39,7 @@ from b123d_recognisers.prismatic_pockets import (  # noqa: E402
     _section_slab,
     _wire_seed,
 )
-from b123d_recognisers.result import _take_inventory  # noqa: E402
+from quiddity.result import _take_inventory  # noqa: E402
 from tools.audit_mfcadpp_one_ended_pockets import _accepted_constituent  # noqa: E402
 from tools.effectiveness_report import load_mfcadpp_truth  # noqa: E402
 from tools.run_effectiveness_baseline import _KNOWN_MFCADPP_2500_INVALID  # noqa: E402
@@ -242,7 +242,7 @@ def _probe_region(
 def _audit_model(
     path: Path,
 ) -> tuple[str, list[dict[str, Any]], Counter[str], dict[str, str] | None]:
-    from b123d_recognisers import import_step_geometry
+    from quiddity import import_step_geometry
 
     part = import_step_geometry(path)
     try:

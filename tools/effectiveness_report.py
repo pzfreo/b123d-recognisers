@@ -230,8 +230,8 @@ def score_inventory(
     """Score one production inventory, adapting physical families to dataset taxonomy."""
 
     # Authority is captured before production recognisers are imported by the corpus runner.
-    from b123d_recognisers._candidates import FamilyId, PredicateId
-    from b123d_recognisers._dispositions import Outcome
+    from quiddity._candidates import FamilyId, PredicateId
+    from quiddity._dispositions import Outcome
 
     if not math.isfinite(seconds) or seconds < 0.0:
         raise EffectivenessDataError("runtime must be finite and non-negative")

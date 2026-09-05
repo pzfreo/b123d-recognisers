@@ -1,10 +1,10 @@
-# b123d-recognisers
+# Quiddity
 
-[![CI](https://github.com/pzfreo/b123d-recognisers/actions/workflows/ci.yml/badge.svg)](https://github.com/pzfreo/b123d-recognisers/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/pzfreo/b123d-recognisers/graph/badge.svg)](https://codecov.io/gh/pzfreo/b123d-recognisers)
-[![PyPI](https://img.shields.io/pypi/v/b123d-recognisers.svg)](https://pypi.org/project/b123d-recognisers/)
-[![Python versions](https://img.shields.io/pypi/pyversions/b123d-recognisers.svg)](https://pypi.org/project/b123d-recognisers/)
-[![License](https://img.shields.io/pypi/l/b123d-recognisers.svg)](LICENSE)
+[![CI](https://github.com/pzfreo/quiddity/actions/workflows/ci.yml/badge.svg)](https://github.com/pzfreo/quiddity/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/pzfreo/quiddity/graph/badge.svg)](https://codecov.io/gh/pzfreo/quiddity)
+[![PyPI](https://img.shields.io/pypi/v/quiddity.svg)](https://pypi.org/project/quiddity/)
+[![Python versions](https://img.shields.io/pypi/pyversions/quiddity.svg)](https://pypi.org/project/quiddity/)
+[![License](https://img.shields.io/pypi/l/quiddity.svg)](LICENSE)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![mypy](https://img.shields.io/badge/mypy-checked-2A6DB2.svg)](https://mypy-lang.org/)
 
@@ -12,7 +12,7 @@ Recover useful engineering features from imported STEP and boundary-representati
 geometry.
 
 A STEP file normally gives a CAD application faces, edges, and solids, but not the design intent
-that produced them. `b123d-recognisers` analyses that topology and returns deterministic semantic
+that produced them. Quiddity analyses that topology and returns deterministic semantic
 records for features such as holes and counterbores, bosses, slots, pockets, pads, fillets,
 chamfers, grooves, hole and pocket patterns, and turned steps. The records contain ordinary,
 JSON-serialisable geometry values rather than build123d or OCP objects.
@@ -35,15 +35,21 @@ The package is Apache-2.0 licensed and independent of any drawing or editing app
 build123d/OCP internally as its B-Rep kernel, but its purpose is recovering meaning from geometry
 whose construction history is not available.
 
+## Package rename
+
+Quiddity is the new distribution and Python namespace for `b123d-recognisers`.
+This branch prepares the rename; the first Quiddity release is not published yet.
+See the [migration guide](docs/quiddity-migration.md) for installation and import changes.
+
 ## Recognise an imported model
 
 Load a STEP file through the package's geometry-only reader, then run the shared recognition
 orchestration to obtain one consistent feature inventory:
 
 ```python
-from b123d_recognisers import FramedRecognitionResult
-from b123d_recognisers import build_framed_recognition_result
-from b123d_recognisers import import_step_geometry
+from quiddity import FramedRecognitionResult
+from quiddity import build_framed_recognition_result
+from quiddity import import_step_geometry
 
 part = import_step_geometry("gearbox-housing.step")
 framed = build_framed_recognition_result(part)
@@ -74,7 +80,7 @@ Individual recognisers are also public when an application needs a narrower answ
 evidence can be injected explicitly so it is not rediscovered:
 
 ```python
-from b123d_recognisers import analyse_cylinders, recognise_hole_patterns, recognise_holes
+from quiddity import analyse_cylinders, recognise_hole_patterns, recognise_holes
 
 cylinders = analyse_cylinders(part)
 holes = recognise_holes(part, cyls=cylinders)
@@ -84,7 +90,7 @@ patterns = recognise_hole_patterns(holes)
 ### Consume recess geometry as JSON
 
 ```python
-from b123d_recognisers import build_section_recess_document
+from quiddity import build_section_recess_document
 
 document = build_section_recess_document(part).to_dict()
 for occurrence in document["occurrences"]:
@@ -104,7 +110,7 @@ CAD front ends that create a declared feature from a selected face can use the s
 single-face inspection namespace instead of importing recogniser internals:
 
 ```python
-from b123d_recognisers.inspection import AnalyticSurface, SurfaceKind, inspect_face
+from quiddity.inspection import AnalyticSurface, SurfaceKind, inspect_face
 
 inspected = inspect_face(selected_face)
 if isinstance(inspected.surface, AnalyticSurface):
@@ -138,7 +144,7 @@ When a consumer needs the exact faces behind accepted occurrences, use the separ
 evidence view:
 
 ```python
-from b123d_recognisers.evidence import build_recognition_evidence
+from quiddity.evidence import build_recognition_evidence
 
 view = build_recognition_evidence(part)
 coverage = view.association
@@ -175,8 +181,8 @@ For the ordinary framed lifecycle, use the paired view rather than running raw e
 framed recognition:
 
 ```python
-from b123d_recognisers import FramedRecognitionEvidence
-from b123d_recognisers import build_framed_recognition_evidence
+from quiddity import FramedRecognitionEvidence
+from quiddity import build_framed_recognition_evidence
 
 framed = build_framed_recognition_evidence(part)
 if isinstance(framed, FramedRecognitionEvidence):
@@ -195,7 +201,7 @@ Use the opt-in framed route when the same physical part must produce local coord
 of its placement in the imported file:
 
 ```python
-from b123d_recognisers import FramedRecognitionResult, build_framed_recognition_result
+from quiddity import FramedRecognitionResult, build_framed_recognition_result
 
 framed = build_framed_recognition_result(part)
 if isinstance(framed, FramedRecognitionResult):
@@ -224,7 +230,7 @@ scheduled for removal in 0.5.0; it will not silently acquire a different return 
 Bounded explanations have the same paired lifecycle:
 
 ```python
-from b123d_recognisers import FramedRecognitionReport, build_framed_recognition_report
+from quiddity import FramedRecognitionReport, build_framed_recognition_report
 
 framed_report = build_framed_recognition_report(part)
 if isinstance(framed_report, FramedRecognitionReport):
@@ -238,7 +244,7 @@ When classification itself depends on the normalized solid, prepare first and ru
 once after making that local decision:
 
 ```python
-from b123d_recognisers import PreparedFramedPart, prepare_framed_part
+from quiddity import PreparedFramedPart, prepare_framed_part
 
 prepared = prepare_framed_part(part)
 if isinstance(prepared, PreparedFramedPart):
@@ -301,7 +307,7 @@ boundary; see [`migration/PARITY.md`](migration/PARITY.md).
 The dependency direction is:
 
 ```text
-consumer → b123d-recognisers → build123d/OCP
+consumer → Quiddity → build123d/OCP
 ```
 
 The runtime package does not import Draftwright and does not return build123d or OCP objects in

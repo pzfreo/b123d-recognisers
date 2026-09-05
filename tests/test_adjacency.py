@@ -23,13 +23,13 @@ from pathlib import Path
 import pytest
 from build123d import Axis, Box, Cylinder, Pos, Rot, SortBy, chamfer, fillet
 
-from b123d_recognisers import (
+from quiddity import (
     recognise_chamfers,
     recognise_fillets,
     recognise_holes,
     recognise_slots,
 )
-from b123d_recognisers._adjacency import (
+from quiddity._adjacency import (
     FaceEdges,
     axis_aligned_axis,
     connected_components,

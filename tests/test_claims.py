@@ -21,9 +21,9 @@ from dataclasses import dataclass
 import pytest
 from build123d import Box, Cylinder, Pos
 
-from b123d_recognisers._adjacency import FaceGraph
-from b123d_recognisers._candidates import FamilyId
-from b123d_recognisers._claims import ClaimLedger
+from quiddity._adjacency import FaceGraph
+from quiddity._candidates import FamilyId
+from quiddity._claims import ClaimLedger
 
 
 @dataclass(frozen=True)

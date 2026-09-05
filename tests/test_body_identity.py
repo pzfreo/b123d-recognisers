@@ -6,7 +6,7 @@ from pathlib import Path
 
 from build123d import Axis, Cylinder, GeomType, Pos, export_step, fillet, import_step
 
-from b123d_recognisers._body_identity import unambiguous_body_keys
+from quiddity._body_identity import unambiguous_body_keys
 
 
 def test_oblique_curved_body_key_is_stable_across_step(tmp_path: Path) -> None:

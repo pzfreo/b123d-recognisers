@@ -48,9 +48,9 @@ from OCP.GeomAbs import (  # noqa: E402
 from OCP.gp import gp_Cone, gp_Cylinder, gp_Pln, gp_Sphere  # noqa: E402
 from OCP.ShapeAnalysis import ShapeAnalysis_CanonicalRecognition  # noqa: E402
 
-from b123d_recognisers import import_step_geometry as import_step  # noqa: E402
-from b123d_recognisers._adjacency import FaceGraph, GraphRunToken  # noqa: E402
-from b123d_recognisers._effective_surfaces import (  # noqa: E402
+from quiddity import import_step_geometry as import_step  # noqa: E402
+from quiddity._adjacency import FaceGraph, GraphRunToken  # noqa: E402
+from quiddity._effective_surfaces import (  # noqa: E402
     AnalyticSurfaceFact,
     EffectiveFaceSurfaceQuery,
     EffectiveSurfaceIndex,
@@ -61,9 +61,9 @@ from b123d_recognisers._effective_surfaces import (  # noqa: E402
     SurfaceUseRefusal,
     effective_faces_for_graph,
 )
-from b123d_recognisers._typing import FaceLike  # noqa: E402
-from b123d_recognisers.pads import _discover_rectangular_pads  # noqa: E402
-from b123d_recognisers.result import RecognitionResult, _take_inventory  # noqa: E402
+from quiddity._typing import FaceLike  # noqa: E402
+from quiddity.pads import _discover_rectangular_pads  # noqa: E402
+from quiddity.result import RecognitionResult, _take_inventory  # noqa: E402
 
 FUSION_EXTENDED_STEP_URL = (
     "https://fusion-360-gallery-dataset.s3.us-west-2.amazonaws.com/"
@@ -155,13 +155,13 @@ def _surface_reader_modules() -> Iterator[ModuleType]:
     """Yield loaded raw-reader modules while excluding the recovery implementation itself."""
 
     excluded = {
-        "b123d_recognisers._analytic_surfaces",
-        "b123d_recognisers._effective_surfaces",
+        "quiddity._analytic_surfaces",
+        "quiddity._effective_surfaces",
     }
     for name, module in tuple(sys.modules.items()):
         if module is None or name in excluded:
             continue
-        if name.startswith("b123d_recognisers.") or name == "build123d.topology.shape_core":
+        if name.startswith("quiddity.") or name == "build123d.topology.shape_core":
             yield module
 
 

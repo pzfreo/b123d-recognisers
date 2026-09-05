@@ -21,14 +21,14 @@ from build123d import (
     import_step,
 )
 
-import b123d_recognisers._sections as section_module
-from b123d_recognisers._section_adapters import (
+import quiddity._sections as section_module
+from quiddity._section_adapters import (
     occurrence_to_passage,
     occurrence_to_prismatic_pocket,
     passage_to_occurrence,
     prismatic_pocket_to_occurrence,
 )
-from b123d_recognisers._sections import (
+from quiddity._sections import (
     BodyRef,
     BodyRefIssuer,
     LocalFrame,
@@ -40,8 +40,8 @@ from b123d_recognisers._sections import (
     section_vertex_dict,
     validate_occurrence,
 )
-from b123d_recognisers.passages import Passage, recognise_passages
-from b123d_recognisers.prismatic_pockets import PrismaticPocket, recognise_prismatic_pockets
+from quiddity.passages import Passage, recognise_passages
+from quiddity.prismatic_pockets import PrismaticPocket, recognise_prismatic_pockets
 from tools._legacy_recognition import (
     build_recognition_result,
 )

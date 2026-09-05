@@ -62,7 +62,7 @@ LABELS = {
 def inventory_attribution(product):
     """Primitive-only attribution counts for all registered physical families."""
 
-    from b123d_recognisers._registry import (
+    from quiddity._registry import (
         PHYSICAL_DEFINITIONS,
         FullyAttributed,
     )
@@ -114,8 +114,8 @@ def _scan_part(part, labels):
     sees, which is the arithmetic that made the old fitted figures unreadable.
     """
 
-    from b123d_recognisers._registry import PHYSICAL_DEFINITIONS
-    from b123d_recognisers.result import _take_inventory
+    from quiddity._registry import PHYSICAL_DEFINITIONS
+    from quiddity.result import _take_inventory
 
     faces = list(part.faces())
     product = _take_inventory(part)
@@ -166,7 +166,7 @@ def scan_part(part, labels):
 def scan(corpus: Path):
     """Every model in *corpus*, skipping any whose label count and face count disagree."""
 
-    from b123d_recognisers import import_step_geometry as import_step
+    from quiddity import import_step_geometry as import_step
 
     claimed: dict[str, Counter] = defaultdict(Counter)
     records: Counter = Counter()
@@ -230,7 +230,7 @@ def scan(corpus: Path):
 def report(result) -> str:
     """The two tables, as text."""
 
-    from b123d_recognisers._registry import PHYSICAL_DEFINITIONS
+    from quiddity._registry import PHYSICAL_DEFINITIONS
 
     claimed = {family: Counter(counts) for family, counts in result["claimed"].items()}
     registry_family_for = {

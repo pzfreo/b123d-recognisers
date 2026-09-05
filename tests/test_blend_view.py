@@ -9,7 +9,7 @@ from dataclasses import dataclass
 import pytest
 from build123d import Axis, Box, Cylinder, Plane, Pos, export_step, fillet, import_step
 
-from b123d_recognisers._adjacency import (
+from quiddity._adjacency import (
     EdgeOccurrenceRef,
     EdgeOwnershipFact,
     FaceGraph,
@@ -18,8 +18,8 @@ from b123d_recognisers._adjacency import (
     SharedEdgeOccurrenceRef,
     SolidRef,
 )
-from b123d_recognisers._analytic_surfaces import SurfaceKind
-from b123d_recognisers._blend_view import (
+from quiddity._analytic_surfaces import SurfaceKind
+from quiddity._blend_view import (
     BlendChain,
     BlendCollapseIndex,
     CollapsedGraphView,
@@ -28,7 +28,7 @@ from b123d_recognisers._blend_view import (
     _edge_groups,
     _one_nonbranching_edge_group,
 )
-from b123d_recognisers._effective_surfaces import (
+from quiddity._effective_surfaces import (
     AnalyticSurfaceFact,
     EffectiveSurfaceIndex,
     OrientationCapability,

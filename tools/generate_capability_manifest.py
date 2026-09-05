@@ -16,21 +16,21 @@ import types
 import typing
 from pathlib import Path
 
-import b123d_recognisers as recognition
-from b123d_recognisers._record import Record
+import quiddity as recognition
+from quiddity._record import Record
 
 ROOT = Path(__file__).parents[1]
-TARGET = ROOT / "src" / "b123d_recognisers" / "capabilities.json"
+TARGET = ROOT / "src" / "quiddity" / "capabilities.json"
 
 FAMILIES = {
-    # `introduced` defaults to 0.1.0 -- every family relicensed from Draftwright arrived
-    # together in that release, so only a family originated here needs to state its own.
+    # Quiddity 0.2.0 is the second alpha and starts this distribution's version history.
+    # All inherited families arrive together; future additions can override `introduced`.
     "angled-steps": {
         "recognisers": [("recognise_angled_steps", "part")],
         "records": [("AngledStep", "output", ["RecognitionResult.angled_steps"])],
         "census": "angled_step",
         "goldens": ["angled_blind_step"],
-        "introduced": "0.2.5",
+        "introduced": "0.2.0",
         "tests": ["tests/test_angled_steps.py"],
     },
     "section-recesses": {
@@ -60,7 +60,7 @@ FAMILIES = {
             "tests/section_recess_expected.json",
             "tests/section_recess_geometry_expected.json",
         ],
-        "introduced": "0.4.15",
+        "introduced": "0.2.0",
         "tests": [
             "tests/test_section_recesses.py",
             "tests/test_section_recess_geometry_golden.py",
@@ -76,7 +76,7 @@ FAMILIES = {
         "records": [("PairedRampStep", "output", ["RecognitionResult.paired_ramp_steps"])],
         "census": "paired_ramp_step",
         "goldens": ["paired_ramp_step"],
-        "introduced": "0.4.6",
+        "introduced": "0.2.0",
         "tests": ["tests/test_paired_ramp_steps.py"],
     },
     "through-steps": {
@@ -84,7 +84,7 @@ FAMILIES = {
         "records": [("ThroughStep", "output", ["RecognitionResult.through_steps"])],
         "census": "through_step",
         "goldens": ["rectangular_through_step"],
-        "introduced": "0.4.6",
+        "introduced": "0.2.0",
         "tests": ["tests/test_through_steps.py"],
     },
     "circular-blind-steps": {
@@ -92,7 +92,7 @@ FAMILIES = {
         "records": [("CircularBlindStep", "output", ["RecognitionResult.circular_blind_steps"])],
         "census": "circular_blind_step",
         "goldens": ["circular_blind_step"],
-        "introduced": "0.4.6",
+        "introduced": "0.2.0",
         "tests": ["tests/test_circular_blind_steps.py"],
     },
     "bosses": {
@@ -115,7 +115,7 @@ FAMILIES = {
             "toroidal_blend_internal",
             "toroidal_blends_turned",
         ],
-        "introduced": "0.4.11",
+        "introduced": "0.2.0",
         "tests": ["tests/test_blends.py", "tests/test_blend_view.py"],
     },
     "chamfers": {
@@ -260,7 +260,7 @@ FAMILIES = {
         "census": "oriented_slot",
         "goldens": [],
         "golden_paths": ["tests/golden/oriented_slots/contract.json"],
-        "introduced": "0.4.12",
+        "introduced": "0.2.0",
         "tests": ["tests/test_oriented_slots.py"],
     },
     "oriented-slot-patterns": {
@@ -280,7 +280,7 @@ FAMILIES = {
         "census": None,
         "goldens": [],
         "golden_paths": ["tests/golden/oriented_slots/contract.json"],
-        "introduced": "0.4.12",
+        "introduced": "0.2.0",
         "tests": ["tests/test_oriented_slots.py"],
     },
     "slots": {
@@ -449,7 +449,7 @@ def _record(name: str, role: str, membership: list[str]) -> dict[str, object]:
         "aggregate_membership": membership,
         "fields": fields,
         "name": name,
-        "qualified_name": f"b123d_recognisers.{name}",
+        "qualified_name": f"quiddity.{name}",
         "role": role,
         "schema_version": RECORD_SCHEMA_VERSIONS.get(name, 1),
     }
@@ -486,11 +486,11 @@ def build_manifest() -> dict[str, object]:
                 + spec.get("golden_paths", [])
             ),
             "id": family_id,
-            "introduced_in": spec.get("introduced", "0.1.0"),
+            "introduced_in": spec.get("introduced", "0.2.0"),
             "recognisers": [
                 (
                     {
-                        "entry_point": f"b123d_recognisers.{name}",
+                        "entry_point": f"quiddity.{name}",
                         "kind": kind,
                         "role": role,
                     }
@@ -498,7 +498,7 @@ def build_manifest() -> dict[str, object]:
                         {
                             "ledger_state": "unavailable",
                             "remove_in": "1.0.0",
-                            "replacement": ("b123d_recognisers.recognise_section_passages"),
+                            "replacement": ("quiddity.recognise_section_passages"),
                         }
                         if role == "compatibility"
                         else {}
@@ -530,9 +530,9 @@ def build_manifest() -> dict[str, object]:
     return {
         "aliases": [],
         "families": families,
-        "format": "b123d-recognisers-capabilities",
+        "format": "quiddity-capabilities",
         "format_version": 2,
-        "package": {"name": "b123d-recognisers", "version": recognition.__version__},
+        "package": {"name": "quiddity", "version": recognition.__version__},
     }
 
 

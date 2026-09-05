@@ -23,13 +23,13 @@ from build123d import (
     import_step,
 )
 
-from b123d_recognisers import recognise_flats
-from b123d_recognisers._adjacency import FaceGraph, edge_face_map, neighbours
-from b123d_recognisers._candidates import FamilyId
-from b123d_recognisers._claims import ClaimLedger
-from b123d_recognisers._cylinder_substrate import analyse_cylinders
-from b123d_recognisers._geometry import _axis_line_coordinates, _canonical_axis_direction
-from b123d_recognisers.flats import _discover_flats
+from quiddity import recognise_flats
+from quiddity._adjacency import FaceGraph, edge_face_map, neighbours
+from quiddity._candidates import FamilyId
+from quiddity._claims import ClaimLedger
+from quiddity._cylinder_substrate import analyse_cylinders
+from quiddity._geometry import _axis_line_coordinates, _canonical_axis_direction
+from quiddity.flats import _discover_flats
 
 _CENTRE = (Align.CENTER, Align.CENTER, Align.CENTER)
 
@@ -235,7 +235,7 @@ def test_flat_writer_from_another_graph_refuses_without_publication() -> None:
 
 
 def test_registry_is_the_only_production_writer_enabled_flat_caller() -> None:
-    package = Path(__file__).parents[1] / "src" / "b123d_recognisers"
+    package = Path(__file__).parents[1] / "src" / "quiddity"
     importers = set()
     for path in package.glob("*.py"):
         if path.name == "flats.py":
@@ -243,7 +243,7 @@ def test_registry_is_the_only_production_writer_enabled_flat_caller() -> None:
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
         direct = any(
             isinstance(node, ast.ImportFrom)
-            and node.module == "b123d_recognisers.flats"
+            and node.module == "quiddity.flats"
             and any(alias.name == "_discover_flats" for alias in node.names)
             for node in ast.walk(tree)
         )

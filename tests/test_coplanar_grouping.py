@@ -18,8 +18,8 @@ from __future__ import annotations
 import pytest
 from build123d import Box, Pos
 
-from b123d_recognisers import recognise_face_levels, recognise_plates
-from b123d_recognisers._geometry import cluster_coordinates
+from quiddity import recognise_face_levels, recognise_plates
+from quiddity._geometry import cluster_coordinates
 
 TOL = 0.5
 

@@ -5,11 +5,13 @@ releases `main` carries a `.devN` version â€” `0.2.6.dev0` after 0.2.5 shipped â
 to `main` publishes a snapshot of it to TestPyPI, so the publish path is exercised
 continuously rather than only at a release.
 
-A release is one GitHub release:
+A Quiddity release is one GitHub release. Use `quiddity-vX.Y.Z` tags: the old package
+already owns tags such as `v0.2.0`, which must not be moved or replaced.
 
 1. Make sure `main` is on the version you intend to ship (`0.2.6.dev0` to release `0.2.6`) and
    that `RELEASE_NOTES.md` has a `## 0.2.6` section.
-2. Create a GitHub release whose tag is `v` followed by that version, with no `.dev` suffix.
+2. Create a GitHub release whose tag is `quiddity-v` followed by that version, with no `.dev`
+   suffix (first Quiddity release: `quiddity-v0.2.0`).
    **Attach nothing.**
 3. `build-release` checks out the tag, strips the `.dev` suffix, builds the wheel and sdist,
    and hands them to the protected `pypi` environment for approval.
@@ -27,7 +29,7 @@ machine and attached to the release, which could only check that the attached ar
 ## The version comes from `main`, not from the tag
 
 The tag selects the commit; the version is whatever that commit's `pyproject.toml` says, minus
-`.dev`. So tagging `v0.3.0` on a commit whose version is `0.2.6.dev0` publishes **0.2.6**, and
+`.dev`. So tagging `quiddity-v0.3.0` on a commit whose version is `0.2.6.dev0` publishes **0.2.6**, and
 the tag is simply a misleading label on it. Nothing rejects that, here or upstream.
 
 Step 1 is therefore the whole safety story: move `main` first, with
@@ -57,7 +59,7 @@ delivery contract.
 ## Minor and major versions
 
 `bump-version` only ever does patch + 1. To release `0.3.0`, open a PR moving `main` to
-`0.3.0.dev0` first, then tag `v0.3.0`.
+`0.3.0.dev0` first, then tag `quiddity-v0.3.0`.
 
 ## One-time repository settings
 
@@ -71,8 +73,14 @@ one-time pending-publisher records on the two indexes must be:
 
 | Index | Project | Owner | Repository | Workflow | Environment |
 | --- | --- | --- | --- | --- | --- |
-| TestPyPI | `b123d-recognisers` | `pzfreo` | `b123d-recognisers` | `publish.yml` | `testpypi` |
-| PyPI | `b123d-recognisers` | `pzfreo` | `b123d-recognisers` | `publish.yml` | `pypi` |
+| TestPyPI | `quiddity` | `pzfreo` | `quiddity` | `publish.yml` | `testpypi` |
+| PyPI | `quiddity` | `pzfreo` | `quiddity` | `publish.yml` | `pypi` |
+
+Before merging the Quiddity rename, configure these new project publishers on both indexes.
+The old project's publisher does not authorize a new distribution name. Main pushes publish
+to TestPyPI automatically; stable PyPI publication still requires an explicit release.
+The GitHub repository is now `pzfreo/quiddity`. Retained old-package publishers must also
+use repository `quiddity` before publishing maintenance releases under the old package name.
 
 TestPyPI and PyPI accounts and publisher registrations are independent. Protect the GitHub
 `pypi` environment with required reviewer approval; `testpypi` does not need approval.

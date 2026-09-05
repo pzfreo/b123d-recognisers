@@ -25,18 +25,18 @@ sys.path.insert(0, str(ROOT))
 
 from build123d import GeomType  # noqa: E402
 
-from b123d_recognisers._adjacency import FaceGraph, FaceNode  # noqa: E402
-from b123d_recognisers._bevel import BevelReject, classify_bevel  # noqa: E402
-from b123d_recognisers._candidates import FamilyId  # noqa: E402
-from b123d_recognisers._dispositions import Outcome  # noqa: E402
-from b123d_recognisers._geometry import (  # noqa: E402
+from quiddity._adjacency import FaceGraph, FaceNode  # noqa: E402
+from quiddity._bevel import BevelReject, classify_bevel  # noqa: E402
+from quiddity._candidates import FamilyId  # noqa: E402
+from quiddity._dispositions import Outcome  # noqa: E402
+from quiddity._geometry import (  # noqa: E402
     AXIS_ALIGNED_COS,
     SMOOTH_ARC_GAP,
     length_tol,
     part_scale,
 )
-from b123d_recognisers.paired_ramp_steps import _RUN_DIRECTION_COS  # noqa: E402
-from b123d_recognisers.result import _take_inventory  # noqa: E402
+from quiddity.paired_ramp_steps import _RUN_DIRECTION_COS  # noqa: E402
+from quiddity.result import _take_inventory  # noqa: E402
 from tools.derive_mfcadpp_components import _components  # noqa: E402
 from tools.effectiveness_report import load_mfcadpp_truth  # noqa: E402
 
@@ -504,7 +504,7 @@ def main() -> int:
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
 
-    from b123d_recognisers import import_step_geometry as import_step
+    from quiddity import import_step_geometry as import_step
 
     paths = sorted(args.root.glob("*.st*p"))[: args.limit]
     if not paths:

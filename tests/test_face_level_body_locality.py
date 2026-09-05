@@ -8,7 +8,7 @@ from typing import cast
 import pytest
 from build123d import Align, Axis, Box, Compound, Cylinder, Pos, export_step, import_step
 
-from b123d_recognisers import (
+from quiddity import (
     FaceLevel,
     FramedRecognitionResult,
     build_framed_recognition_result,
@@ -16,11 +16,11 @@ from b123d_recognisers import (
     recognise_turned_steps,
     step_level_records,
 )
-from b123d_recognisers._adjacency import FaceGraph
-from b123d_recognisers._candidates import FamilyId
-from b123d_recognisers._claims import EvidenceWriter
-from b123d_recognisers.levels import _discover_step_levels, recognise_face_levels
-from b123d_recognisers.result import _take_inventory
+from quiddity._adjacency import FaceGraph
+from quiddity._candidates import FamilyId
+from quiddity._claims import EvidenceWriter
+from quiddity.levels import _discover_step_levels, recognise_face_levels
+from quiddity.result import _take_inventory
 
 _MINIMUM_Z = (Align.CENTER, Align.CENTER, Align.MIN)
 

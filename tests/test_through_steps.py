@@ -28,14 +28,14 @@ from build123d import (
     import_step,
 )
 
-from b123d_recognisers import build_recognition_result, feature_census
-from b123d_recognisers import through_steps as through_step_module
-from b123d_recognisers._adjacency import FaceGraph
-from b123d_recognisers._candidates import FamilyId
-from b123d_recognisers._claims import ClaimLedger
-from b123d_recognisers._dispositions import Outcome
-from b123d_recognisers.result import _take_inventory
-from b123d_recognisers.through_steps import (
+from quiddity import build_recognition_result, feature_census
+from quiddity import through_steps as through_step_module
+from quiddity._adjacency import FaceGraph
+from quiddity._candidates import FamilyId
+from quiddity._claims import ClaimLedger
+from quiddity._dispositions import Outcome
+from quiddity.result import _take_inventory
+from quiddity.through_steps import (
     ThroughStep,
     _four_principal_runs,
     recognise_through_steps,

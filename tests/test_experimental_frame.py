@@ -21,10 +21,10 @@ from build123d import (
     extrude,
 )
 
-import b123d_recognisers._run as run_module
-import b123d_recognisers.frames as frames
-from b123d_recognisers._typing import CylinderInventory, Part
-from b123d_recognisers.frames import (
+import quiddity._run as run_module
+import quiddity.frames as frames
+from quiddity._typing import CylinderInventory, Part
+from quiddity.frames import (
     FramedPreparation,
     FramedRecognitionReport,
     FramedRecognitionResult,
@@ -38,7 +38,7 @@ from b123d_recognisers.frames import (
     infer_part_frame,
     prepare_framed_part,
 )
-from b123d_recognisers.result import (
+from quiddity.result import (
     RecognitionResult,
     build_raw_recognition_result,
     build_recognition_result,
