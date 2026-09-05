@@ -82,6 +82,16 @@ def build_raw_recognition_result(part, *, cylinders=None, rotational=False):
 build_recognition_result = build_raw_recognition_result
 
 
+def detector_outputs_equal(left, right, *, excluding=()):
+    """Compare detector fields, not their derived unified API projections."""
+    from dataclasses import fields
+
+    excluded = {"section_recesses", "section_recess_refusals", "section_recess_patterns",
+                *excluding}
+    return all(getattr(left, field.name) == getattr(right, field.name)
+               for field in fields(left) if field.name not in excluded)
+
+
 def feature_census(part):
     from b123d_recognisers.census import _LEGACY_CENSUS_BINDINGS
     from b123d_recognisers.result import _take_inventory

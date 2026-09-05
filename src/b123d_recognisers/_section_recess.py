@@ -13,6 +13,7 @@ import math
 from dataclasses import dataclass
 from typing import cast
 
+from build123d import Edge, Face, Solid, Vector, Wire
 from OCP.BRepAdaptor import BRepAdaptor_Surface
 from OCP.GeomAbs import GeomAbs_Cylinder
 
@@ -588,6 +589,36 @@ def project_section_recess_geometry(
     )
 
 
+def _obround_prism(
+    depth: Vector3, first: Vector3, second: Vector3, radius: float, low: float, high: float,
+) -> Solid:
+    """Exact line/semicircle probe, before publication rounding (not a chord polygon)."""
+    along = _subtract(second, first)
+    along = _subtract(along, _scale(depth, _dot(along, depth)))
+    direction = _unit(along)
+    if direction is None or high <= low:
+        raise ValueError("obround probe requires distinct centres and increasing bounds")
+    width = (
+        depth[1] * direction[2] - depth[2] * direction[1],
+        depth[2] * direction[0] - depth[0] * direction[2],
+        depth[0] * direction[1] - depth[1] * direction[0],
+    )
+
+    def point(center: Vector3, offset: Vector3, sign: float) -> Vector:
+        return Vector(*(center[i] + depth[i] * (low - _dot(center, depth))
+                        + sign * radius * offset[i] for i in range(3)))
+
+    a, b = point(first, width, -1), point(second, width, -1)
+    c, d = point(second, width, 1), point(first, width, 1)
+    boundary = Wire([
+        Edge.make_line(a, b),
+        Edge.make_three_point_arc(b, point(second, direction, 1), c),
+        Edge.make_line(c, d),
+        Edge.make_three_point_arc(d, point(first, direction, -1), a),
+    ])
+    return Solid.extrude(Face(boundary), Vector(*_scale(depth, high - low)))
+
+
 def _one_obround_candidate(graph: FaceGraph, floor: FaceNode) -> _Candidate | None:
     floor_normal = graph.normal(floor)
     if floor_normal is None:
@@ -678,6 +709,25 @@ def _one_obround_candidate(graph: FaceGraph, floor: FaceNode) -> _Candidate | No
     if len(mouths) != 1 or owner is None:
         return None
     try:
+        solid = graph.solid_shape(owner)
+        inset = 1e-6  # Same kernel-coordinate floor used by the polygonal section probes.
+        if high - low <= 2 * inset:
+            return None
+        thickness = max(2e-5, max(1.0, high - low, radius, math.hypot(*long)) * 1e-4)
+        floor_sign = -1.0 if abs(floor_at - low) <= tolerance else 1.0
+
+        def probe(start: float, end: float) -> Solid:
+            lo, hi = sorted((start, end))
+            return _obround_prism(depth, first[2], second[2], radius, lo, hi)
+
+        if (
+            _material_fraction(solid, probe(low + inset, high - inset)) > 1e-9
+            or _material_fraction(solid, probe(mouth_at - floor_sign * inset,
+                                              mouth_at - floor_sign * thickness)) > 1e-9
+            or _material_fraction(solid, probe(floor_at + floor_sign * inset,
+                                              floor_at + floor_sign * thickness)) < 1.0 - 1e-9
+        ):
+            return None
         geometry = _public_geometry(
             depth=depth,
             first_center=first[2],
@@ -686,7 +736,7 @@ def _one_obround_candidate(graph: FaceGraph, floor: FaceNode) -> _Candidate | No
             run_interval=(low, high),
             floor_at=floor_at,
         )
-    except ValueError:
+    except (RuntimeError, TypeError, ValueError, ZeroDivisionError):
         return None
     return _Candidate(
         tuple(sorted(node.index for node in (*cylinders, *sides))),

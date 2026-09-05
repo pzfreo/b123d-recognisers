@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Reject obround pocket claims obstructed by same-body material, including suspended bridges
+  and obstructions inside curved ends. Exact semicircular probes now verify the empty run,
+  open mouth and complete floor backing before unified geometry is published.
+
 - **0.5.0 breaking provider cutover:** specialised pocket, channel, recess and passage root
   exports/result fields are replaced by `SectionRecess`; JSON schema 2 adds occurrence-indexed
   patterns and explicit face-referenced geometry refusals. The public census counts unified recesses
