@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2024-2026 Paul Fremantle
-"""JSON document projection of one ordinary framed recognition/evidence run."""
+"""JSON document projection of one ordinary framed recognition and evidence run."""
 
 from __future__ import annotations
 
