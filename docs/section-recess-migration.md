@@ -1,6 +1,6 @@
 # Consuming unified recess geometry
 
-The 0.5.0 cutover replaces specialised pocket, recess, channel and passage outputs with
+The 0.4.15 cutover replaces specialised pocket, recess, channel and passage outputs with
 `SectionRecess`. Use `build_section_recess_document(part).to_dict()` for JSON schema 2, or
 `RecognitionResult.section_recesses` when already running the aggregate. The builder runs
 raw/caller-coordinate recognition once; it does not automatically frame the input.
@@ -45,8 +45,9 @@ coordinates, plus center and pitches; no implicit world-XY angle is required. On
 one unambiguous geometric occurrence per member are published; this
 does not introduce a new free-axis pattern detector.
 
-The package development version is 0.5.0.dev0. This is a breaking, coordinated consumer change,
-not a patch compatibility promise. Nothing in this work publishes a release or changes Draftwright.
+This ships in 0.4.15 at the maintainer's request. Despite the patch version, it is a breaking,
+coordinated consumer change and an explicit exception to the earlier 0.4.x compatibility promise.
+Consumers must migrate; pin 0.4.14 until ready. It does not change Draftwright automatically.
 
 ## Explicit refusals, not fabricated geometry
 

@@ -60,7 +60,7 @@ FAMILIES = {
             "tests/section_recess_expected.json",
             "tests/section_recess_geometry_expected.json",
         ],
-        "introduced": "0.5.0",
+        "introduced": "0.4.15",
         "tests": [
             "tests/test_section_recesses.py",
             "tests/test_section_recess_geometry_golden.py",

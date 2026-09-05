@@ -138,7 +138,7 @@ face is in the denominator, including intentional stock/background geometry, and
 constituent publication may still be partial. The projection neither classifies leftovers nor
 changes any recognition result.
 
-From 0.5.0, retired recess families are projected as `SectionRecess` or an explicit
+From 0.4.15, retired recess families are projected as `SectionRecess` or an explicit
 `SectionRecessRefusal` under `section_recesses` in the evidence view. Refusals retain source-face
 association but carry no reconstructible geometry; they do not count in the public geometric
 census. Consumers must distinguish these record types. Patterns reference occurrence indices.

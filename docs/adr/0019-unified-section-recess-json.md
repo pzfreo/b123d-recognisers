@@ -339,7 +339,10 @@ material probes verify the section and all three openings. Schema 2 explicitly a
 open-profile, two-open-end occurrences as `channel`; it does not weaken the old envelope-spanning
 Channel detector or invent a fourth wall.
 
-The 0.5.0 public API removes the specialised records, result fields and root entrypoints. Arrays
+At the maintainer's explicit request this breaking cutover ships as 0.4.15 rather than the planned
+0.5.0. It overrides the earlier 0.4.x preservation promise for the specialised recess APIs;
+consumers must migrate or pin 0.4.14. The public API removes the specialised records, result fields
+and root entrypoints. Arrays
 and grids reference unified occurrence indices rather than embedded Pocket values. Patterns are
 published only when every member has one unambiguous unified geometric occurrence.
 
