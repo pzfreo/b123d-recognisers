@@ -6,6 +6,10 @@
   inventory already ran. Early refusals carry `None`; callers can reuse late results without
   rerunning recognition. No unproved face mapping or partial evidence is exposed (#493).
 
+- Preserve all remaining support fragments when build123d boolean subtraction returns a
+  ShapeList. This fixes the public SectionRecess crash on build123d 0.10 without weakening
+  the complete-support proof. Focused compatibility CI pins build123d 0.9, 0.10 and 0.11.
+
 - Add `quiddity part.step [-o recognition.json]`, `--capabilities` and `--version`.
   The shared `quiddity.document.build_recognition_document` projects one framed evidence run
   into JSON with unchanged feature records, explicit coordinate placement, document-local face
